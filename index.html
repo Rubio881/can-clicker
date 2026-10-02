@@ -1,0 +1,1727 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#050505">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Can Clicker">
+<meta name="description" content="CAN CLICKER - an idle clicker about energy drink cans. Offline-ready PWA.">
+<title>CAN CLICKER</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* ============================== THEME ============================== */
+:root{
+  --acc:#7cff00; --acc-rgb:124,255,0;
+  --bg:#050505; --panel:#0f0f13; --panel2:#17171d; --line:#26262e;
+  --txt:#f3f3f5; --dim:#8b8b99; --bad:#ff4d5e; --good:#35e08a;
+  --disp:'Bebas Neue',Impact,'Arial Narrow',sans-serif;
+  --body:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --r-common:#8b929a; --r-rare:#3da5ff; --r-epic:#b44dff; --r-legendary:#ffb300; --r-limited:#ff3d7f;
+}
+body.hallo{ --bg:#0b0412; --panel:#150a20; --panel2:#1f1030; --line:#3a1f55; --acc:#ff7a00; --acc-rgb:255,122,0; }
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:var(--body);
+  overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;touch-action:manipulation;}
+button{font-family:inherit;color:inherit;-webkit-appearance:none;appearance:none;cursor:pointer;touch-action:manipulation}
+#app{position:fixed;inset:0;margin:0 auto;max-width:560px;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+#bg{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 50% 42%,rgba(var(--acc-rgb),.20),transparent 62%),
+             radial-gradient(circle at 50% 120%,rgba(var(--acc-rgb),.10),transparent 50%);transition:background .6s}
+body.over #bg{animation:neon .45s infinite alternate}
+body.over #app{box-shadow:inset 0 0 60px rgba(var(--acc-rgb),.55)}
+body.crash #bg{filter:grayscale(1) brightness(.6)}
+@keyframes neon{from{opacity:.55}to{opacity:1;filter:brightness(1.6)}}
+.shake{animation:shake .28s}
+@keyframes shake{0%,100%{transform:translate(0)}20%{transform:translate(-6px,3px)}40%{transform:translate(5px,-4px)}60%{transform:translate(-4px,-3px)}80%{transform:translate(3px,4px)}}
+
+/* ============================== HUD ============================== */
+#hud{position:relative;z-index:3;padding:calc(env(safe-area-inset-top) + 8px) 16px 6px;text-align:center}
+#cans{font:400 52px/1 var(--disp);letter-spacing:1px;color:#fff;text-shadow:0 0 18px rgba(var(--acc-rgb),.55)}
+.hud-lbl{font:400 15px var(--disp);letter-spacing:3px;color:var(--acc);margin-top:-2px}
+.hud-sub{display:flex;justify-content:center;gap:16px;font-size:13px;color:var(--dim);margin-top:4px}
+.hud-sub b{color:var(--txt);font-weight:800}
+#banners{position:relative;z-index:3;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:0 12px;min-height:0}
+.chip{font:800 11px var(--body);letter-spacing:.5px;padding:5px 9px;border-radius:99px;background:rgba(var(--acc-rgb),.15);border:1px solid rgba(var(--acc-rgb),.5);color:var(--acc)}
+.chip.pink{background:rgba(255,61,127,.15);border-color:#ff3d7f;color:#ff7aa6}
+.chip.red{background:rgba(255,77,94,.15);border-color:var(--bad);color:#ff8d99}
+
+/* ============================== VIEWS ============================== */
+#views{position:relative;z-index:2;flex:1;min-height:0}
+.view{position:absolute;inset:0;display:none;flex-direction:column}
+.view.active{display:flex}
+.sc{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:8px 12px 16px}
+.sec-h{font:400 22px var(--disp);letter-spacing:1.5px;margin:10px 2px 8px;color:var(--txt);display:flex;justify-content:space-between;align-items:baseline}
+.sec-h small{font:600 12px var(--body);color:var(--dim);letter-spacing:0}
+#tabs{position:relative;z-index:4;display:flex;background:rgba(10,10,14,.96);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+#tabs button{flex:1;min-height:58px;background:none;border:0;color:var(--dim);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 15px var(--disp);letter-spacing:1.5px;position:relative}
+#tabs button .ti{font-size:20px;line-height:1;filter:grayscale(1) brightness(.8)}
+#tabs button.on{color:var(--acc)}
+#tabs button.on .ti{filter:none}
+#tabs button.on::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;border-radius:0 0 4px 4px;background:var(--acc);box-shadow:0 0 12px var(--acc)}
+.dot{position:absolute;top:8px;right:calc(50% - 22px);width:9px;height:9px;border-radius:50%;background:var(--bad);display:none}
+.dot.on{display:block}
+
+/* ============================== TAP VIEW ============================== */
+.tap-top{display:flex;justify-content:center;gap:8px;padding:6px 12px;min-height:46px;align-items:center}
+.eqchip{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px 10px 4px 6px;font-size:11px;min-height:36px;max-width:48%}
+.eqchip svg{width:20px;height:32px;flex:none}
+.eqchip b{display:block;font:400 14px var(--disp);letter-spacing:1px}
+.eqchip span{color:var(--dim);display:block;line-height:1.15}
+#can-wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
+#can{width:min(68vw,330px);height:min(46vh,calc(min(68vw,330px)*1.6));touch-action:none;cursor:pointer;filter:drop-shadow(0 0 28px rgba(var(--acc-rgb),.45));will-change:transform}
+#can svg{width:100%;height:100%;display:block;pointer-events:none}
+body.over #can{filter:drop-shadow(0 0 45px var(--acc)) saturate(1.5)}
+.meter{padding:6px 18px 10px;position:relative;z-index:2}
+.mrow{display:flex;justify-content:space-between;font:400 16px var(--disp);letter-spacing:1.5px;margin-bottom:4px}
+#combo-t{color:var(--acc)}
+#caff-lbl{color:var(--dim)}
+#caff-lbl.hot{color:#ffd400}
+#caff-lbl.over{color:#fff;text-shadow:0 0 10px var(--acc)}
+#caff-lbl.crash{color:var(--bad)}
+.bar{height:16px;border-radius:99px;background:#15151b;border:1px solid var(--line);overflow:hidden;position:relative}
+.bar>i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#ffd400,var(--acc));border-radius:99px;transition:width .08s linear}
+.bar.over>i{background:linear-gradient(90deg,#fff,var(--acc));box-shadow:0 0 14px var(--acc)}
+.bar.crash>i{background:var(--bad)}
+.bar::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(255,255,255,.3)}
+.bar.thin{height:10px}
+.bar.thin::after{display:none}
+.bar.prog>i{background:var(--acc);transition:width .3s}
+#gold{position:absolute;inset:0;pointer-events:none;z-index:6;overflow:hidden}
+.gcan{position:absolute;left:0;top:0;width:68px;height:96px;margin:-48px 0 0 -34px;pointer-events:auto;touch-action:manipulation;filter:drop-shadow(0 0 14px #ffd400);cursor:pointer}
+.gcan svg{width:100%;height:100%;display:block;pointer-events:none}
+.gcan.ltd{filter:drop-shadow(0 0 14px #ff3d7f)}
+#fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
+
+/* ============================== CARDS / BUTTONS ============================== */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:8px;position:relative}
+.card.locked{opacity:.45}
+.row{display:flex;align-items:center;gap:10px}
+.grow{flex:1;min-width:0}
+.btn{min-height:44px;border:0;border-radius:12px;background:var(--acc);color:#000;font:800 14px var(--body);padding:0 16px;letter-spacing:.3px;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-align:center}
+.btn:active{transform:scale(.97)}
+.btn.alt{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
+.btn.red{background:var(--bad);color:#fff}
+.btn[disabled]{opacity:.3;pointer-events:none}
+.btn.block{display:flex;width:100%}
+.btn small{display:block;font-weight:600;font-size:10px;opacity:.8}
+.nm{font:400 20px var(--disp);letter-spacing:1px}
+.ds{font-size:12px;color:var(--dim);line-height:1.35}
+.sm{font-size:12px;color:var(--dim)}
+.hl{color:var(--acc)}
+.bld .ico{font-size:30px;width:44px;text-align:center}
+.bld .own{font:400 26px var(--disp);color:var(--acc);margin-left:auto}
+.bld .btns{display:flex;gap:6px;margin-top:8px}
+.bld .btns .btn{flex:1;min-height:44px;padding:0 4px;flex-direction:column;gap:0;font-size:13px;line-height:1.15}
+.bld .btns .btn small{font-size:10px}
+.tag{display:inline-block;font:800 10px var(--body);letter-spacing:.6px;padding:2px 7px;border-radius:99px;border:1px solid currentColor;vertical-align:middle}
+.empty{text-align:center;color:var(--dim);padding:30px 20px;font-size:13px}
+.upg .cost{font:400 20px var(--disp);color:var(--acc);letter-spacing:1px}
+
+/* ============================== FRIDGE ============================== */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cell{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:8px 4px 6px;text-align:center;position:relative;min-height:44px}
+.cell svg{width:54%;height:auto;display:block;margin:0 auto}
+.cell .cn{font:400 14px var(--disp);letter-spacing:.6px;margin-top:2px;line-height:1.05;min-height:2.1em;display:flex;align-items:center;justify-content:center}
+.cell .lv{position:absolute;top:4px;right:6px;font:800 10px var(--body);color:var(--dim)}
+.cell .eq{position:absolute;top:4px;left:6px;font-size:12px}
+.cell.u{opacity:.9}
+.cell.u svg{opacity:.55}
+.r-common{border-color:var(--r-common)} .r-rare{border-color:var(--r-rare);box-shadow:0 0 10px rgba(61,165,255,.2)}
+.r-epic{border-color:var(--r-epic);box-shadow:0 0 12px rgba(180,77,255,.3)}
+.r-legendary{border-color:var(--r-legendary);box-shadow:0 0 14px rgba(255,179,0,.4)}
+.r-limited{border-color:var(--r-limited);animation:ltd 1.6s infinite alternate}
+@keyframes ltd{from{box-shadow:0 0 6px rgba(255,61,127,.3)}to{box-shadow:0 0 18px rgba(255,61,127,.8)}}
+.c-common{color:var(--r-common)} .c-rare{color:var(--r-rare)} .c-epic{color:var(--r-epic)} .c-legendary{color:var(--r-legendary)} .c-limited{color:var(--r-limited)}
+.slots{display:flex;gap:8px;margin:6px 0 4px}
+.slot{flex:1;height:78px;border:2px dashed var(--line);border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--panel);position:relative;color:var(--dim);font-size:11px;text-align:center;padding:2px}
+.slot svg{height:68px;width:auto}
+.slot.lock{opacity:.4}
+.crates{display:flex;gap:8px;margin:8px 0}
+.crate{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 4px;text-align:center;min-height:76px}
+.crate .ci{font-size:28px;line-height:1.1}
+.crate .cc{font:400 18px var(--disp);letter-spacing:1px}
+.crate.has{border-color:var(--acc);box-shadow:0 0 14px rgba(var(--acc-rgb),.3)}
+
+/* ============================== MORE / MENU ============================== */
+.menu{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 12px;text-align:left;min-height:84px;position:relative}
+.mi .mt{font:400 22px var(--disp);letter-spacing:1px;display:block}
+.mi .ms{font-size:11px;color:var(--dim);display:block;margin-top:2px}
+.mi .mic{position:absolute;right:10px;top:8px;font-size:22px}
+.back{margin:4px 0 8px}
+.ach{display:flex;gap:10px;align-items:center}
+.ach .ai{font-size:26px;width:40px;height:40px;border-radius:12px;background:var(--panel2);display:flex;align-items:center;justify-content:center;filter:grayscale(1);opacity:.5}
+.ach.got .ai{filter:none;opacity:1;background:rgba(var(--acc-rgb),.18)}
+.ach.got{border-color:rgba(var(--acc-rgb),.5)}
+.stat{display:flex;justify-content:space-between;padding:11px 4px;border-bottom:1px solid var(--line);font-size:14px}
+.stat b{font-weight:800;color:var(--acc)}
+.tog{display:flex;justify-content:space-between;align-items:center;padding:6px 2px;min-height:48px}
+.seg{display:flex;gap:4px}
+.seg button{min-height:44px;min-width:48px;padding:0 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--dim);font:700 12px var(--body)}
+.seg button.on{background:var(--acc);color:#000;border-color:var(--acc)}
+.tabs2{display:flex;gap:6px;margin:6px 0 10px}
+.tabs2 button{flex:1;min-height:44px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font:400 17px var(--disp);letter-spacing:1px;color:var(--dim)}
+.tabs2 button.on{background:var(--acc);color:#000;border-color:var(--acc)}
+textarea{width:100%;min-height:110px;background:#000;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:8px;font:11px monospace;-webkit-user-select:text;user-select:text}
+
+/* ============================== MODAL / TOAST ============================== */
+#modal{position:absolute;inset:0;z-index:20;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+#modal[hidden]{display:none}
+.mbox{width:100%;max-height:100%;overflow-y:auto;background:var(--panel);border:1px solid var(--acc);border-radius:20px;padding:18px;text-align:center;box-shadow:0 0 40px rgba(var(--acc-rgb),.25);overscroll-behavior:contain;animation:pop .25s}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+.mbox h2{font:400 32px var(--disp);letter-spacing:2px;margin:0 0 4px;color:var(--acc)}
+.mbox p{margin:6px 0;color:var(--dim);font-size:13px;line-height:1.45}
+.mbox .big{font:400 44px var(--disp);color:#fff;letter-spacing:1px}
+.mbox .cb{display:flex;gap:8px;margin-top:14px}
+.mbox .cb .btn{flex:1}
+.mbox svg.big-can{height:200px;width:auto;margin:6px auto;display:block;filter:drop-shadow(0 0 18px rgba(var(--acc-rgb),.5))}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:12px 0}
+.day{border:1px solid var(--line);border-radius:10px;padding:6px 0;font-size:10px;color:var(--dim);background:var(--panel2)}
+.day b{display:block;font-size:18px;font-weight:400}
+.day.cur{border-color:var(--acc);color:var(--acc);background:rgba(var(--acc-rgb),.12)}
+.day.done{opacity:.4}
+.crate-anim{font-size:90px;animation:cshake .5s infinite}
+@keyframes cshake{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg) scale(1.05)}75%{transform:rotate(12deg) scale(1.05)}}
+.reveal{animation:reveal .6s}
+@keyframes reveal{from{transform:scale(.2) rotate(-20deg);opacity:0;filter:brightness(4)}to{transform:none;opacity:1;filter:none}}
+#toasts{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 142px);z-index:30;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;padding:0 12px}
+.toast{background:rgba(15,15,19,.96);border:1px solid var(--acc);border-radius:14px;padding:9px 14px;font-size:13px;font-weight:600;max-width:100%;box-shadow:0 4px 24px rgba(0,0,0,.6);animation:tin .3s,tout .4s 2.8s forwards}
+.toast b{color:var(--acc)}
+@keyframes tin{from{transform:translateY(-20px);opacity:0}to{transform:none;opacity:1}}
+@keyframes tout{to{opacity:0;transform:translateY(-10px)}}
+
+/* ============================== MINI-GAMES ============================== */
+.mg{background:#000;border-radius:14px;border:1px solid var(--line);display:block;margin:8px auto;touch-action:none}
+.pressure{height:30px}
+.mcard{aspect-ratio:1;border-radius:12px;background:var(--panel2);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;padding:4px;transition:transform .2s}
+.mcard svg{height:100%;width:auto}
+.mcard.back{background:repeating-linear-gradient(45deg,#16161c,#16161c 6px,#1d1d25 6px,#1d1d25 12px)}
+.mcard.ok{border-color:var(--acc);opacity:.6}
+.mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="bg"></div>
+  <div id="hud">
+    <div id="cans">0</div>
+    <div class="hud-lbl" data-b="currency">CANS</div>
+    <div class="hud-sub"><span>⚡ <b id="cps">0</b>/s</span><span>👆 <b id="cpt">1</b>/tap</span></div>
+  </div>
+  <div id="banners"></div>
+  <main id="views">
+    <section id="v-tap" class="view active">
+      <div class="tap-top" id="eqchips"></div>
+      <div id="can-wrap"><div id="can" role="button" aria-label="Tap the can"></div></div>
+      <div class="meter">
+        <div class="mrow"><span id="combo-t">COMBO x0</span><span id="caff-lbl">CAFFEINE</span></div>
+        <div class="bar" id="caff-bar"><i id="caff-fill"></i></div>
+      </div>
+    </section>
+    <section id="v-bld" class="view"><div class="sc" id="bld-list"></div></section>
+    <section id="v-upg" class="view"><div class="sc" id="upg-list"></div></section>
+    <section id="v-fri" class="view"><div class="sc" id="fri-body"></div></section>
+    <section id="v-more" class="view"><div class="sc" id="more-body"></div></section>
+  </main>
+  <nav id="tabs">
+    <button data-tab="tap" class="on"><span class="ti">🥤</span><span data-b="tab_tap">TAP</span></button>
+    <button data-tab="bld"><span class="ti">🏭</span><span data-b="tab_bld">BUILD</span></button>
+    <button data-tab="upg"><span class="ti">⚡</span><span data-b="tab_upg">UPGRADES</span><i class="dot" id="dot-upg"></i></button>
+    <button data-tab="fri"><span class="ti">🧊</span><span data-b="tab_fri">FRIDGE</span><i class="dot" id="dot-fri"></i></button>
+    <button data-tab="more"><span class="ti">☰</span><span data-b="tab_more">MORE</span><i class="dot" id="dot-more"></i></button>
+  </nav>
+  <canvas id="fx"></canvas>
+  <div id="gold"></div>
+  <div id="toasts"></div>
+  <div id="modal" hidden></div>
+</div>
+<script>
+'use strict';
+/* =====================================================================
+   CAN CLICKER  -  single-file idle clicker PWA
+   Sections: CONFIG · UTIL · STATE · DERIVED · GAME LOGIC · AUDIO · FX ·
+             UI · EVENTS · MINIGAMES · SAVE · BOOT / GAME LOOP
+   ===================================================================== */
+
+/* =====================================================================
+   1. CONFIG  -  every brand / flavour / building name lives in here.
+   Re-skin the whole game to an original brand by editing CFG only.
+   ===================================================================== */
+const CFG = {
+  brand: {
+    name: 'CAN CLICKER', currency: 'Cans', currencyOne: 'Can', fridge: 'Fridge',
+    crate: 'Crate', token: 'Aluminium Token', tokens: 'Aluminium Tokens', tokenShort: 'Tokens',
+    recycle: 'Recycle', plant: 'Recycling Plant', caffeine: 'Caffeine', golden: 'Golden Can',
+    overcharge: 'OVERCHARGED', crash: 'Sugar Crash', tagline: 'Tap. Fizz. Repeat.',
+    tabs: { tap: 'TAP', bld: 'BUILD', upg: 'UPGRADES', fri: 'FRIDGE', more: 'MORE' },
+    saveKey: 'canclicker.save', hallo: 'Halloween Event'
+  },
+  rarities: {
+    common:    { name: 'Common',    color: '#8b929a' },
+    rare:      { name: 'Rare',      color: '#3da5ff' },
+    epic:      { name: 'Epic',      color: '#b44dff' },
+    legendary: { name: 'Legendary', color: '#ffb300' },
+    limited:   { name: 'Limited',   color: '#ff3d7f' }
+  },
+  /* Crate tables: relative weight per rarity. Limited weights are small on purpose. */
+  crates: {
+    common: { name: 'Common Crate', icon: '📦', w: { common: 70, rare: 24, epic: 5, legendary: 0.6, limited: 1 } },
+    rare:   { name: 'Rare Crate',   icon: '🎁', w: { common: 25, rare: 50, epic: 18, legendary: 3,   limited: 4 } },
+    epic:   { name: 'Epic Crate',   icon: '💎', w: { common: 0,  rare: 35, epic: 48, legendary: 10,  limited: 7 } }
+  },
+  /* Perk definitions: u = unit ('%' ×100, 's' secs, 'h' hours, 'x' plain), t = text after the number */
+  perks: {
+    tapMult:    { u: '%', t: 'tap power' },
+    costRed:    { u: '%', t: 'cheaper buildings' },
+    offlineEff: { u: '%', t: 'offline earnings' },
+    goldenFreq: { u: '%', t: 'more Golden Cans' },
+    critDmg:    { u: 'x', t: 'crit damage' },
+    caffGain:   { u: '%', t: 'faster caffeine fill' },
+    crateLuck:  { u: '%', t: 'crate luck' },
+    cpsTap:     { u: '%', t: 'of CPS added to taps' },
+    critChance: { u: '%', t: 'crit chance' },
+    globalMult: { u: '%', t: 'all production' },
+    buildMult:  { u: '%', t: 'production from buildings' },
+    goldenDur:  { u: '%', t: 'longer Golden buffs' },
+    offlineCap: { u: 'h', t: 'offline cap' },
+    caffDrain:  { u: '%', t: 'slower caffeine drain' },
+    comboLen:   { u: 's', t: 'longer combo window' },
+    overDur:    { u: 's', t: 'longer Overcharge' },
+    dropRate:   { u: '%', t: 'tap drop rate' },
+    crashRed:   { u: '%', t: 'weaker Sugar Crash' }
+  },
+  /* c = neon colour, ms = unlock at lifetime cans (milestone), season = only during that event */
+  flavours: [
+    { id: 'original',   name: 'Original Green',          r: 'common',    c: '#7cff00', perk: ['tapMult', 0.10], ms: 0 },
+    { id: 'locarb',     name: 'Lo-Carb',                 r: 'common',    c: '#19e6c1', perk: ['costRed', 0.03], ms: 3e3 },
+    { id: 'paradise',   name: 'Ultra Paradise',          r: 'common',    c: '#4fe3d2', perk: ['offlineEff', 0.10], ms: 8e4 },
+    { id: 'rosa',       name: 'Ultra Rosa',              r: 'common',    c: '#ff7eb6', perk: ['goldenFreq', 0.15], ms: 1e6 },
+    { id: 'fiesta',     name: 'Ultra Fiesta',            r: 'common',    c: '#ffb347', perk: ['critDmg', 0.5] },
+    { id: 'violet',     name: 'Ultra Violet',            r: 'common',    c: '#a45bff', perk: ['caffGain', 0.15] },
+    { id: 'peachy',     name: 'Ultra Peachy Keen',       r: 'common',    c: '#ff9a76', perk: ['crateLuck', 0.15] },
+    { id: 'strawberry', name: 'Ultra Strawberry Dreams', r: 'common',    c: '#ff4d6d', perk: ['cpsTap', 0.01] },
+    { id: 'white',      name: 'Ultra White',             r: 'rare',      c: '#e8f1ff', perk: ['critChance', 0.10], ms: 2e7 },
+    { id: 'watermelon', name: 'Ultra Watermelon',        r: 'rare',      c: '#ff5f7e', perk: ['globalMult', 0.06] },
+    { id: 'mango',      name: 'Mango Loco',              r: 'rare',      c: '#ff9500', perk: ['buildMult', 0.15], ms: 3e8 },
+    { id: 'pacific',    name: 'Pacific Punch',           r: 'rare',      c: '#ff6ec7', perk: ['goldenDur', 0.20] },
+    { id: 'rehab',      name: 'Rehab Lemonade',          r: 'rare',      c: '#ffe14d', perk: ['offlineCap', 2] },
+    { id: 'java',       name: 'Java',                    r: 'rare',      c: '#c98b5a', perk: ['caffDrain', 0.30] },
+    { id: 'gold',       name: 'Ultra Gold',              r: 'epic',      c: '#ffc933', perk: ['globalMult', 0.10], ms: 5e10 },
+    { id: 'pipeline',   name: 'Pipeline Punch',          r: 'epic',      c: '#ff5ea0', perk: ['comboLen', 0.7] },
+    { id: 'nitro',      name: 'Nitro',                   r: 'epic',      c: '#59c2ff', perk: ['overDur', 3] },
+    { id: 'monarch',    name: 'Monarch',                 r: 'epic',      c: '#d4a5ff', perk: ['dropRate', 0.5] },
+    { id: 'black',      name: 'Ultra Black',             r: 'legendary', c: '#9aa0b4', perk: ['globalMult', 0.20], ms: 1e13 },
+    { id: 'respine',    name: 'Reserve White Pineapple', r: 'legendary', c: '#f4f7c2', perk: ['tapMult', 0.50] },
+    { id: 'reswater',   name: 'Reserve Watermelon',      r: 'legendary', c: '#ff7a93', perk: ['buildMult', 0.40] },
+    { id: 'khaotic',    name: 'Khaotic',                 r: 'limited',   c: '#ff8a1f', perk: ['critDmg', 1.0] },
+    { id: 'aussie',     name: 'Aussie Lemonade',         r: 'limited',   c: '#f4ff4a', perk: ['costRed', 0.05] },
+    { id: 'rio',        name: 'Rio Punch',               r: 'limited',   c: '#ff4fa3', perk: ['crashRed', 0.5] },
+    { id: 'badapple',   name: 'Bad Apple',               r: 'limited',   c: '#9bff3d', perk: ['crateLuck', 0.30] },
+    { id: 'viking',     name: 'Viking Berry',            r: 'limited',   c: '#6a5cff', perk: ['caffGain', 0.35] },
+    { id: 'ghoul',      name: 'Ghoul Punch',             r: 'limited',   c: '#9d4dff', perk: ['critChance', 0.08], season: 'hallo' },
+    { id: 'pumpkin',    name: 'Pumpkin Rush',            r: 'limited',   c: '#ff7a00', perk: ['buildMult', 0.20], season: 'hallo' }
+  ],
+  /* cost = base cost, cps = base cans/sec each. Cost scales ×1.15 per owned. */
+  buildings: [
+    { id: 'minifridge', name: 'Mini Fridge',               icon: '🧊', cost: 15,      cps: 0.05,   desc: 'A tiny fridge that keeps a few cans nicely chilled.' },
+    { id: 'corner',     name: 'Corner Shop',               icon: '🏪', cost: 100,     cps: 0.5,     desc: 'Open late. Sells cans to anyone who looks tired.' },
+    { id: 'vending',    name: 'Vending Machine',           icon: '🥤', cost: 1100,    cps: 4,     desc: 'Clunk. Rattle. Fizz. Always working at 3 AM.' },
+    { id: 'gas',        name: 'Gas Station',               icon: '⛽', cost: 12000,   cps: 23.5,    desc: 'Every road trip starts with a can by the register.' },
+    { id: 'gym',        name: 'Gym Sponsorship',           icon: '🏋️', cost: 130000,  cps: 130,   desc: 'Lifters grab a can before every personal best.' },
+    { id: 'esports',    name: 'Esports Team',              icon: '🎮', cost: 1.4e06,   cps: 700,  desc: 'Pro gamers need pro-level fizz. Logo on the jerseys.' },
+    { id: 'super',      name: 'Supermarket Chain',         icon: '🛒', cost: 2e07,     cps: 3900,  desc: 'Whole aisles stacked to the ceiling with cans.' },
+    { id: 'trucks',     name: 'Distribution Truck Fleet',  icon: '🚚', cost: 3.3e08,   cps: 22000, desc: 'Convoys of cans rolling across the continent.' },
+    { id: 'bottling',   name: 'Bottling Plant',            icon: '🏭', cost: 5.1e09,   cps: 130000, desc: 'A thousand cans a minute on the main line.' },
+    { id: 'mega',       name: 'Mega Factory',              icon: '🏗️', cost: 7.5e10,  cps: 800000, desc: 'The size of a small town. Never shuts down.' },
+    { id: 'orbital',    name: 'Orbital Can Station',       icon: '🛰️', cost: 1e12,    cps: 5e06,   desc: 'Zero-gravity fizz, delivered by space elevator.' },
+    { id: 'rift',       name: 'Multiverse Fizz Rift',      icon: '🌀', cost: 1.4e13,  cps: 3.25e07, desc: 'Pulls cans in from every universe where you tapped.' }
+  ],
+  /* Milestone upgrades: at owned counts, cost = building base cost × costMul. Each one doubles that building. */
+  milestones: { at: [10, 25, 50, 100], costMul: [10, 100, 2000, 100000], names: ['Cold Storage', 'Bulk Orders', 'Franchise Deal', 'Global Empire'] },
+  /* Shop upgrade chains. Each entry [name, cost, value]. Only the next item in a chain is shown. */
+  upgrades: {
+    tapMult:  { desc: v => 'Tap power ×2', list: [
+      ['Reinforced Thumbs', 100, 2], ['Cold Grip', 500, 2], ['Iron Fingers', 10e3, 2], ['Titanium Tips', 100e3, 2],
+      ['Pull-Tab Pro', 5e6, 2], ['Hydraulic Hands', 100e6, 2], ['Quantum Thumb', 5e9, 2], ['Thumb of Legend', 100e9, 2] ] },
+    cpsTap:   { desc: v => '+' + Math.round(v * 100) + '% of your CPS added to every tap', list: [
+      ['Caffeine Touch', 3e3, 0.005], ['Buzzing Fingers', 300e3, 0.01], ['Jitter Gloves', 30e6, 0.015],
+      ['Overclocked Taps', 3e9, 0.025], ['Fizz Overdrive', 300e9, 0.04] ] },
+    critC:    { desc: v => '+' + Math.round(v * 100) + '% crit chance', list: [
+      ['Lucky Pull-Tab', 2e3, 0.02], ['Sharp Eye', 80e3, 0.02], ['Gamblers Grip', 4e6, 0.03], ['Jackpot Instinct', 400e6, 0.03] ] },
+    critD:    { desc: v => '+' + v + 'x crit damage', list: [
+      ['Heavy Hitter', 8e3, 3], ['Knockout Crack', 600e3, 5], ['Critical Mass', 60e6, 8], ['Supernova Snap', 6e9, 12] ] },
+    offline:  { desc: v => '+' + v + 'h offline cap', list: [
+      ['Night Shift', 50e3, 4], ['Double Shift', 5e6, 4], ['Never Close', 500e6, 8] ] },
+    crate:    { desc: v => '+' + Math.round(v * 100) + '% crate luck', list: [
+      ['Lucky Crates', 20e3, 0.15], ['Premium Pallets', 2e6, 0.2], ['Treasure Freight', 200e6, 0.3] ] },
+    bld:      { desc: v => '+' + Math.round(v * 100) + '% building production', list: [
+      ['Better Insulation', 25e3, 0.10], ['Smart Logistics', 2.5e6, 0.15], ['Robot Staff', 250e6, 0.20], ['AI Foreman', 25e9, 0.25], ['Fizz Singularity', 2.5e12, 0.30] ] },
+    global:   { desc: v => '+' + Math.round(v * 100) + '% all production', list: [
+      ['Premium Aluminium', 400e3, 0.10], ['Brand Awareness', 40e6, 0.15], ['World Tour', 4e9, 0.20], ['Cult Following', 400e9, 0.30] ] }
+  },
+  /* Recycling Plant skill tree: base = token cost at level 0 (×1.5 per level) */
+  tree: {
+    tap: { name: 'Tapping', nodes: [
+      { id: 'tapPow',  name: 'Iron Thumbs',     desc: '+25% tap power per level',           max: 10, base: 1 },
+      { id: 'tapCps',  name: 'Fizz Reflex',     desc: '+0.5% of CPS added to taps per lvl', max: 10, base: 2 },
+      { id: 'critC',   name: 'Lucky Streak',    desc: '+1% crit chance per level',          max: 10, base: 2 },
+      { id: 'critD',   name: 'Heavy Crits',     desc: '+0.5x crit damage per level',        max: 10, base: 2 },
+      { id: 'overD',   name: 'Voltage Core',    desc: '+1s Overcharge per level',           max: 5,  base: 4 },
+      { id: 'start',   name: 'Starter Stock',   desc: 'Begin each run with bonus cans',     max: 8,  base: 2 } ] },
+    prod: { name: 'Production', nodes: [
+      { id: 'prod',    name: 'Efficient Lines', desc: '+10% all production per level',      max: 10, base: 1 },
+      { id: 'cost',    name: 'Bulk Discount',   desc: '-1% building cost per level',        max: 10, base: 2 },
+      { id: 'offCap',  name: 'Night Owls',      desc: '+4h offline cap per level',          max: 5,  base: 3 },
+      { id: 'offEff',  name: 'Auto-Restock',    desc: '+10% offline earnings per level',    max: 5,  base: 3 },
+      { id: 'bldM',    name: 'Smart Factories', desc: '+8% building production per level',  max: 10, base: 2 },
+      { id: 'caffG',   name: 'Espresso Pipes',  desc: '+8% caffeine fill per level',        max: 5,  base: 3 } ] },
+    luck: { name: 'Luck', nodes: [
+      { id: 'gFreq',   name: 'Golden Magnet',   desc: '+10% Golden Can frequency per lvl',  max: 8,  base: 1 },
+      { id: 'gDur',    name: 'Long Buzz',       desc: '+10% buff duration per level',       max: 8,  base: 2 },
+      { id: 'cLuck',   name: 'Lucky Crates',    desc: '+8% crate luck per level',           max: 10, base: 2 },
+      { id: 'drop',    name: 'Rare Finder',     desc: '+15% tap drop rate per level',       max: 8,  base: 2 },
+      { id: 'flvLv',   name: 'Flavour Mastery', desc: '+5% flavour perk power per level',   max: 10, base: 3 },
+      { id: 'slot',    name: 'Bigger Fridge',   desc: '+1 flavour slot per level',          max: 2,  base: 15 } ] }
+  },
+  quests: {
+    tap:   n => `Tap the can ${n} times`,
+    combo: n => `Hit a ${n} combo`,
+    buy:   (n, b) => `Buy ${n} ${CFG.buildings[b].name}${n > 1 ? 's' : ''}`,
+    gold:  n => `Catch ${n} Golden Can${n > 1 ? 's' : ''}`,
+    over:  n => n > 1 ? `Reach OVERCHARGED ${n} times` : 'Reach OVERCHARGED',
+    crit:  n => `Land ${n} critical hits`,
+    earn:  n => `Earn ${fmt(n)} ${CFG.brand.currency}`,
+    mg:    n => `Play ${n} mini-game${n > 1 ? 's' : ''}`,
+    crate: n => `Open ${n} Crate${n > 1 ? 's' : ''}`
+  },
+  /* 7-day login cycle. m = minutes of production as cans (min 1000), k = crate kind */
+  daily: [
+    { t: 'cans', m: 5,  label: 'Cans' },
+    { t: 'crate', k: 'common', n: 1, label: 'Common Crate' },
+    { t: 'cans', m: 15, label: 'Cans' },
+    { t: 'crate', k: 'rare', n: 1, label: 'Rare Crate' },
+    { t: 'cans', m: 40, label: 'Cans' },
+    { t: 'crate', k: 'rare', n: 2, label: '2 Rare Crates' },
+    { t: 'crate', k: 'epic', n: 1, label: 'EPIC Crate' }
+  ],
+  /* Achievements: generated from the compact tables below (60+ total). Each gives +1% production. */
+  ach: {
+    taps:   [[1, 'First Sip', '🥤'], [100, 'Thirsty', '👆'], [1000, "Can't Stop", '🔥'], [10000, 'Tapped 10,000 times', '💥'], [100000, 'Thumb Marathon', '🏃'], [1e6, 'Million Tap Club', '👑']],
+    life:   [[1e3, 'Pocket Change', '🪙'], [1e6, 'Millionaire Fizz', '💰'], [1e9, 'Billion Cans', '🏦'], [1e12, 'Trillion Club', '🚀'], [1e15, 'Quadrillion Quencher', '🌌'], [1e18, 'Quintillion Overlord', '♾️']],
+    cps:    [[10, 'Trickle', '💧'], [1e3, 'Stream', '🌊'], [1e5, 'River', '🏞️'], [1e7, 'Flood', '🌪️'], [1e9, 'Tsunami', '🌀']],
+    bFirst: 'First {b}', bFifty: '50 {b}s',
+    combo:  [[25, 'Combo Starter', '🎯'], [100, 'Combo Master', '⚡'], [250, 'Combo God', '🌟']],
+    over:   [[1, 'Overcharged!', '🔋'], [10, 'Voltage Addict', '🔌'], [50, 'Overcharged 50 times', '☢️']],
+    gold:   [[1, 'Golden Touch', '✨'], [10, 'Gold Rush', '🏅'], [50, 'Midas Thumb', '🏆']],
+    crit:   [[100, 'Critical Thinker', '🎲'], [1000, 'Crit Machine', '💢']],
+    crate:  [[1, 'Unboxing', '📦'], [25, 'Crate Collector', '🎁'], [100, 'Crate Hoarder', '🧰']],
+    flav:   [[5, 'Mixed Case', '🍹'], [10, 'Flavour Fan', '🍓'], [15, 'Connoisseur', '🍸'], [20, 'Fridge Full', '🧊']],
+    other:  { ultra: ['Collected every Ultra', '🤍'], legend: ['Legend Hunter', '🏵️'], all: ['Completionist', '💯'],
+              pres1: ['Recycled!', '♻️'], pres5: ['Eco Warrior', '🌍'], pres10: ['Circular Economy', '🔄'],
+              streak: ['Seven Day Streak', '📅'], mg10: ['Mini-Game Pro', '🕹️'], quest10: ['Errand Runner', '📋'], hour1: ['Hour of Power', '⏱️'], lv10: ['Max Level', '🔟'] }
+  }
+};
+const ULTRA_IDS = CFG.flavours.filter(f => /^Ultra /.test(f.name)).map(f => f.id);
+const FL = {}; CFG.flavours.forEach(f => FL[f.id] = f);
+const RAR_ORDER = ['common', 'rare', 'epic', 'legendary', 'limited'];
+
+/* =====================================================================
+   2. UTIL
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[(Math.random() * a.length) | 0];
+const SUF = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
+function fmt(n) {
+  if (!isFinite(n)) return '∞';
+  if (n < 0) return '-' + fmt(-n);
+  const mode = (typeof S !== 'undefined' && S.set) ? S.set.numFmt : 'short';
+  if (n < 1000) return n < 100 && n % 1 !== 0 ? String(Math.round(n * 10) / 10) : String(Math.floor(n));
+  if (mode === 'full' && n < 1e15) return Math.floor(n).toLocaleString('en-US');
+  if (mode === 'sci' || n >= 1e36) { const e = Math.floor(Math.log10(n)); return (n / Math.pow(10, e)).toFixed(2) + 'e' + e; }
+  let i = Math.floor(Math.log10(n) / 3), v = n / Math.pow(1000, i);
+  let s = v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : v.toFixed(0);
+  if (parseFloat(s) >= 1000) { i++; s = (v / 1000).toFixed(2); }
+  return s + SUF[i];
+}
+function fmtTime(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return h ? `${h}h ${m}m` : m ? `${m}m ${s}s` : `${s}s`;
+}
+const dayKey = (d = new Date()) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+function shade(hex, amt) {            // darken (<0) / lighten (>0)
+  const n = parseInt(hex.slice(1), 16);
+  const f = c => Math.round(clamp(amt < 0 ? c * (1 + amt) : c + (255 - c) * amt, 0, 255));
+  return '#' + [n >> 16, (n >> 8) & 255, n & 255].map(f).map(x => x.toString(16).padStart(2, '0')).join('');
+}
+function hexRgb(hex) { const n = parseInt(hex.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+function wpick(entries) {             // entries: [[value, weight], ...]
+  let t = 0; entries.forEach(e => t += e[1]);
+  let r = Math.random() * t;
+  for (const e of entries) { r -= e[1]; if (r <= 0) return e[0]; }
+  return entries[entries.length - 1][0];
+}
+/* Halloween: auto between Oct 15 and Nov 2 (local time), or forced on/off in settings */
+function isHalloween() {
+  const m = S.set.hallo; if (m === 'on') return true; if (m === 'off') return false;
+  const d = new Date(), md = d.getMonth() * 100 + d.getDate();   // Oct 15 = 915, Nov 2 = 1002
+  return md >= 915 && md <= 1002;
+}
+
+/* =====================================================================
+   3. STATE
+   ===================================================================== */
+const SAVE_VERSION = 1;
+function newState() {
+  return {
+    v: SAVE_VERSION,
+    cans: 0, life: 0, run: 0, taps: 0,
+    b: CFG.buildings.map(() => 0),          // owned counts
+    up: {},                                  // purchased upgrade ids
+    fl: { original: { lv: 1 } },             // owned flavours -> level
+    eq: ['original'],                        // equipped flavour ids
+    crates: { common: 1, rare: 0, epic: 0 },
+    cm: 3,                                   // crate-milestone exponent already awarded (10^k lifetime cans)
+    ach: {},
+    pres: { n: 0, earned: 0, tokens: 0, tree: {} },
+    buffs: { prod: 0, tapF: 0, happy: 0 },
+    ev: { limId: null, limEnd: 0, nextLim: 0 },
+    daily: { last: '', streak: 0 },
+    q: { day: '', list: [], done: 0 },
+    mg: { shake: 0, stack: 0, match: 0, bestStack: 0 },
+    st: { time: 0, crits: 0, combo: 0, gold: 0, over: 0, crates: 0, bestCps: 0, mg: 0, upg: 0 },
+    set: { sound: true, haptic: true, parts: 2, numFmt: 'short', hallo: 'auto' },
+    saved: Date.now()
+  };
+}
+let S = newState();                  // persistent state
+const R = {                          // runtime-only (not saved)
+  combo: 0, lastTap: 0, caff: 0, mode: 'normal', modeT: 0,
+  goldT: rnd(50, 90), happyT: rnd(400, 700), limT: 30,
+  gold: null, tab: 'tap', sub: null, mgActive: null, ready: false
+};
+
+/* =====================================================================
+   4. DERIVED  -  every multiplier is recomputed by recalc() when state changes
+   ===================================================================== */
+const D = {};
+const MS = CFG.milestones;
+function treeLv(id) { return S.pres.tree[id] || 0; }
+function slotsMax() { return Math.min(5, 1 + (S.life >= 1e7 ? 1 : 0) + (S.pres.n >= 1 ? 1 : 0) + treeLv('slot')); }
+function flavLv(id) { return S.fl[id] ? S.fl[id].lv : 0; }
+function perkVal(f, lv) { return f.perk[1] * (1 + 0.2 * (lv - 1)) * (1 + 0.05 * treeLv('flvLv')); }
+function perkSum(type) {
+  let t = 0;
+  for (const id of S.eq) { const f = FL[id]; if (f && f.perk[0] === type && S.fl[id]) t += perkVal(f, S.fl[id].lv); }
+  return t;
+}
+function perkText(type, v) {
+  const p = CFG.perks[type];
+  const r = x => Math.round(x * 10) / 10;
+  const n = p.u === '%' ? '+' + r(v * 100) + '%' : p.u === 'x' ? '+' + Math.round(v * 100) / 100 + 'x' : p.u === 's' ? '+' + r(v) + 's' : '+' + r(v) + 'h';
+  return n + ' ' + p.t;
+}
+function chainSum(chain) { let t = 0; CFG.upgrades[chain].list.forEach((u, i) => { if (S.up[chain + i]) t += u[2]; }); return t; }
+function chainProd(chain) { let t = 1; CFG.upgrades[chain].list.forEach((u, i) => { if (S.up[chain + i]) t *= u[2]; }); return t; }
+function achCount() { return Object.keys(S.ach).length; }
+function recalc() {
+  const pk = perkSum;
+  D.tapPow = chainProd('tapMult') * (1 + pk('tapMult')) * (1 + 0.25 * treeLv('tapPow'));
+  D.cpsTap = chainSum('cpsTap') + pk('cpsTap') + 0.005 * treeLv('tapCps');
+  D.critCh = 0.02 + chainSum('critC') + pk('critChance') + 0.01 * treeLv('critC');
+  D.critMul = 5 + chainSum('critD') + pk('critDmg') + 0.5 * treeLv('critD');
+  D.bld = (1 + chainSum('bld')) * (1 + pk('buildMult')) * (1 + 0.08 * treeLv('bldM'));
+  D.tokenMul = 1 + 0.02 * S.pres.earned;
+  D.global = (1 + 0.01 * achCount()) * D.tokenMul * (1 + pk('globalMult')) * (1 + chainSum('global')) * (1 + 0.10 * treeLv('prod'));
+  D.costMul = (1 - Math.min(0.6, pk('costRed') + 0.01 * treeLv('cost'))) * (S.buffs.happy > 0 ? 0.8 : 1);
+  D.offCap = 8 + chainSum('offline') + pk('offlineCap') + 4 * treeLv('offCap');
+  D.offEff = Math.min(1, 0.5 + pk('offlineEff') + 0.1 * treeLv('offEff'));
+  D.comboT = 1.5 + pk('comboLen');
+  D.drain = Math.max(0.25, 1 - pk('caffDrain'));
+  D.caffG = 1 + pk('caffGain') + 0.08 * treeLv('caffG');
+  D.luck = 1 + chainSum('crate') + pk('crateLuck') + 0.08 * treeLv('cLuck');
+  D.drop = 1 + pk('dropRate') + 0.15 * treeLv('drop');
+  D.gFreq = 1 + pk('goldenFreq') + 0.10 * treeLv('gFreq');
+  D.gDur = 1 + pk('goldenDur') + 0.10 * treeLv('gDur');
+  D.overT = 10 + pk('overDur') + treeLv('overD');
+  D.crashMul = 0.4 + 0.6 * clamp(pk('crashRed'), 0, 1);       // tap strength during Sugar Crash
+  D.crashT = 8 * (1 - 0.5 * clamp(pk('crashRed'), 0, 1));
+}
+function milestoneCount(i) { let m = 0; MS.at.forEach(t => { if (S.up['ms_' + i + '_' + t]) m++; }); return m; }
+function bldCpsEach(i) { return CFG.buildings[i].cps * Math.pow(2, milestoneCount(i)) * D.bld * D.global; }
+function cpsBase() {                  // production without temporary caffeine / golden boosts
+  let t = 0; for (let i = 0; i < S.b.length; i++) if (S.b[i]) t += S.b[i] * bldCpsEach(i);
+  return t;
+}
+function caffBoost() { return R.mode === 'over' ? 1.5 : R.caff > 50 ? 1 + (R.caff - 50) / 50 * 0.5 : 1; }
+function cps() { return cpsBase() * (S.buffs.prod > 0 ? 7 : 1) * caffBoost(); }
+function comboMult() { return 1 + Math.min(R.combo, 150) * 0.013; }
+function tapBase(c) { return D.tapPow * D.global + D.cpsTap * (c === undefined ? cps() : c); }
+function tapMods() {
+  let m = comboMult();
+  if (R.mode === 'over') m *= 7; else if (R.mode === 'crash') m *= D.crashMul;
+  if (S.buffs.tapF > 0) m *= 5;
+  return m;
+}
+
+/* =====================================================================
+   5. GAME LOGIC  (no DOM access here - UI talks to it through H hooks)
+   ===================================================================== */
+/* H = hooks the UI layer overrides. Defaults are no-ops so the engine runs headless. */
+const H = {
+  toast() {}, sfx() {}, buzz() {}, mode() {}, themeChanged() {}, dirty() {}
+};
+R.clock = 0;
+
+function earn(n) {
+  S.cans += n; S.life += n; S.run += n;
+  qAdd('earn', n);
+}
+function markDirty(...what) { recalc(); H.dirty(what); }
+
+/* ---------- buildings ---------- */
+const BR = 1.15;
+function bCost(i, n) {
+  const c0 = CFG.buildings[i].cost * Math.pow(BR, S.b[i]);
+  return c0 * (Math.pow(BR, n) - 1) / (BR - 1) * D.costMul;
+}
+function bMax(i) {
+  const c1 = CFG.buildings[i].cost * Math.pow(BR, S.b[i]) * D.costMul;
+  if (S.cans < c1) return 0;
+  let n = Math.floor(Math.log(S.cans * (BR - 1) / c1 + 1) / Math.log(BR));
+  while (n > 0 && bCost(i, n) > S.cans) n--;
+  return n;
+}
+function buyB(i, n) {
+  if (n === 'max') n = bMax(i);
+  if (n < 1) return false;
+  const c = bCost(i, n);
+  if (S.cans < c) return false;
+  S.cans -= c; S.b[i] += n;
+  qAdd('buy', n, i);
+  markDirty('bld', 'upg');
+  return true;
+}
+
+/* ---------- upgrades (shop chains + building milestones) ---------- */
+const UPGS = [];
+(function buildUpgrades() {
+  for (const chain in CFG.upgrades) {
+    CFG.upgrades[chain].list.forEach((u, idx) => {
+      UPGS.push({ id: chain + idx, name: u[0], cost: u[1],
+        icon: chain === 'offline' ? '🌙' : chain === 'crate' ? '🎁' : chain === 'global' ? '🌍' : chain === 'bld' ? '🏭' : chain.startsWith('crit') ? '🎯' : '👆',
+        desc: () => CFG.upgrades[chain].desc(u[2]), req: () => idx === 0 || !!S.up[chain + (idx - 1)] });
+    });
+  }
+  CFG.buildings.forEach((b, i) => MS.at.forEach((at, j) => {
+    UPGS.push({ id: 'ms_' + i + '_' + at, name: b.name + ': ' + MS.names[j], cost: b.cost * MS.costMul[j], icon: b.icon, ms: true,
+      desc: () => `Own ${at} · doubles ${b.name} output`, req: () => S.b[i] >= at });
+  }));
+})();
+function upgVisible(u) {
+  return !S.up[u.id] && u.req() && u.cost <= Math.max(S.cans * 8, cpsBase() * 900);
+}
+function buyUpg(id) {
+  const u = UPGS.find(x => x.id === id);
+  if (!u || S.up[id] || !u.req() || S.cans < u.cost) return false;
+  S.cans -= u.cost; S.up[id] = 1; S.st.upg++;
+  markDirty('upg', 'bld'); H.sfx('buy');
+  return true;
+}
+
+/* ---------- flavours, crates ---------- */
+const flavAvail = f => !f.season || (f.season === 'hallo' && isHalloween());
+const owned = id => !!S.fl[id];
+function ownedCount() { return Object.keys(S.fl).length; }
+function addCrate(kind, n = 1, quiet) {
+  S.crates[kind] = (S.crates[kind] || 0) + n;
+  if (!quiet) H.toast(`🎁 +${n} <b>${CFG.crates[kind].name}</b>`);
+  H.dirty(['fri']);
+}
+function rollFlavour(kind) {
+  const w = CFG.crates[kind].w;
+  const entries = RAR_ORDER.map(r => {
+    const pool = CFG.flavours.filter(f => f.r === r && flavAvail(f));
+    let x = pool.length ? w[r] : 0;
+    if (r === 'epic' || r === 'legendary') x *= D.luck;
+    if (r === 'limited' && isHalloween()) x *= 2;
+    return [r, x];
+  });
+  const r = wpick(entries);
+  const pool = CFG.flavours.filter(f => f.r === r && flavAvail(f));
+  const fresh = pool.filter(f => !owned(f.id));
+  return (fresh.length && Math.random() < 0.7 ? pick(fresh) : pick(pool)).id;
+}
+/* Gives a flavour: new = unlock, duplicate = +1 level (max 10), extra copies refund cans. */
+function giveFlavour(id, quiet) {
+  const f = FL[id], res = { id, isNew: false, lv: 1, refund: 0 };
+  if (!S.fl[id]) { S.fl[id] = { lv: 1 }; res.isNew = true; }
+  else if (S.fl[id].lv < 10) S.fl[id].lv++;
+  else { res.refund = Math.max(1000, cpsBase() * 300); earn(res.refund); }
+  res.lv = S.fl[id].lv;
+  markDirty('fri'); H.themeChanged();
+  if (!quiet) H.toast(res.isNew ? `🆕 New flavour: <b>${f.name}</b>` : `⬆ <b>${f.name}</b> Lv ${res.lv}`);
+  return res;
+}
+function openCrate(kind) {
+  if (!(S.crates[kind] > 0)) return null;
+  S.crates[kind]--; S.st.crates++; qAdd('crate', 1);
+  const id = rollFlavour(kind), res = giveFlavour(id, true);
+  res.kind = kind; H.sfx(res.isNew ? 'fanfare' : 'chime'); H.buzz([30, 40, 60]);
+  return res;
+}
+function crateBuyCost(kind) { return Math.max(kind === 'rare' ? 12000 : 2000, cpsBase() * (kind === 'rare' ? 7200 : 1200)); }
+function buyCrate(kind) {
+  const c = crateBuyCost(kind);
+  if (S.cans < c) return false;
+  S.cans -= c; addCrate(kind, 1, true); H.sfx('buy'); return true;
+}
+function toggleEquip(id) {
+  if (!owned(id)) return false;
+  const i = S.eq.indexOf(id);
+  if (i >= 0) { if (S.eq.length === 1) return false; S.eq.splice(i, 1); }
+  else if (S.eq.length < slotsMax()) S.eq.push(id);
+  else if (slotsMax() === 1) S.eq = [id];
+  else { H.toast('All slots full - unequip one first'); return false; }
+  markDirty('fri'); H.themeChanged(); H.sfx('equip');
+  return true;
+}
+function checkMilestones() {
+  CFG.flavours.forEach(f => { if (f.ms !== undefined && !owned(f.id) && S.life >= f.ms) giveFlavour(f.id); });
+  while (S.life >= Math.pow(10, S.cm + 1)) {
+    S.cm++; addCrate(S.cm < 7 ? 'common' : S.cm < 11 ? 'rare' : 'epic', 1);
+  }
+}
+
+/* ---------- tapping, caffeine, combo ---------- */
+function startOver() {
+  R.mode = 'over'; R.modeT = D.overT; R.caff = 100; S.st.over++; qAdd('over', 1);
+  H.mode('over'); H.sfx('over'); H.buzz([40, 30, 80]);
+}
+function doTap() {
+  if (R.clock - R.lastTap > D.comboT) R.combo = 0;
+  R.combo++; R.lastTap = R.clock;
+  if (R.combo > S.st.combo) S.st.combo = R.combo;
+  S.taps++; qAdd('tap', 1); qMax('combo', R.combo);
+  if (R.mode === 'normal') { R.caff = Math.min(100, R.caff + 4 * D.caffG); if (R.caff >= 100) startOver(); }
+  let v = tapBase() * tapMods();
+  const crit = Math.random() < D.critCh;
+  if (crit) { v *= D.critMul; S.st.crits++; qAdd('crit', 1); }
+  earn(v);
+  // rare drops: crates and straight flavour drops
+  if (Math.random() < 0.0005 * D.drop) addCrate(Math.random() < 0.12 ? 'rare' : 'common', 1);
+  if (Math.random() < 0.00006 * D.drop) {
+    const id = rollFlavour('common'), r = giveFlavour(id, true);
+    H.toast(`✨ Drop! <b>${FL[id].name}</b>${r.isNew ? ' (NEW)' : ' Lv ' + r.lv}`); H.sfx('fanfare');
+  }
+  return { v, crit };
+}
+
+/* ---------- golden can / limited flavour catch ---------- */
+function catchGold() {
+  const g = R.gold; if (!g) return null;
+  R.gold = null; let msg = '';
+  if (g.type === 'ltd') {
+    const id = S.ev.limId;
+    if (id) { giveFlavour(id, true); msg = `🎉 Caught <b>${FL[id].name}</b>!`; endLimited(true); H.sfx('fanfare'); }
+  } else {
+    S.st.gold++; qAdd('gold', 1);
+    const k = wpick([['prod', 35], ['cash', 25], ['crate', 15], ['tapF', 25]]);
+    if (k === 'prod') { S.buffs.prod = 30 * D.gDur; msg = `✨ <b>PRODUCTION FRENZY</b> ×7 for ${Math.round(30 * D.gDur)}s`; }
+    else if (k === 'tapF') { S.buffs.tapF = 20 * D.gDur; msg = `👆 <b>TAP FRENZY</b> ×5 taps for ${Math.round(20 * D.gDur)}s`; }
+    else if (k === 'cash') { const c = cpsBase(), a = Math.min(S.cans * 0.15, c * 900) + c * 60 + 13; earn(a); msg = `💰 <b>LUCKY!</b> +${fmt(a)} ${CFG.brand.currency}`; }
+    else { const kind = wpick([['common', 70], ['rare', 25], ['epic', 5]]); addCrate(kind, 1, true); msg = `🎁 Free <b>${CFG.crates[kind].name}</b>!`; }
+    H.sfx('gold');
+  }
+  H.toast(msg); H.buzz([20, 30, 20]); markDirty('fri');
+  return msg;
+}
+
+/* ---------- events ---------- */
+function startLimited() {
+  const pool = CFG.flavours.filter(f => f.r === 'limited' && flavAvail(f) && !owned(f.id));
+  if (!pool.length) { S.ev.nextLim = Date.now() + 12 * 3600e3; return; }
+  const seasonal = pool.filter(f => f.season);
+  const f = seasonal.length && Math.random() < 0.7 ? pick(seasonal) : pick(pool);
+  S.ev.limId = f.id; S.ev.limEnd = Date.now() + 24 * 3600e3; R.limT = 20;
+  H.toast(`⏳ <b>LIMITED DROP</b>: ${f.name} is catchable for 24h!`); H.sfx('chime');
+}
+function endLimited(caught) {
+  S.ev.limId = null; S.ev.limEnd = 0; S.ev.nextLim = Date.now() + 12 * 3600e3;
+  if (R.gold && R.gold.type === 'ltd') R.gold = null;
+  if (!caught) H.toast('Limited Drop ended');
+}
+function eventTick(dt) {
+  R.goldT -= dt;
+  if (R.goldT <= 0 && !R.gold) { R.gold = { type: 'gold', t: 0 }; R.goldT = rnd(60, 180) / D.gFreq; }
+  R.happyT -= dt;
+  if (R.happyT <= 0) {
+    R.happyT = rnd(420, 780); S.buffs.happy = 90; recalc();
+    H.toast('🍻 <b>HAPPY HOUR!</b> Buildings 20% cheaper for 90s'); H.sfx('chime');
+  }
+  if (!S.ev.limId && S.st.time > 1500 && Date.now() >= S.ev.nextLim) startLimited();
+  if (S.ev.limId) {
+    if (Date.now() > S.ev.limEnd) endLimited(false);
+    else { R.limT -= dt; if (R.limT <= 0 && !R.gold) { R.gold = { type: 'ltd', t: 0 }; R.limT = 90; } }
+  }
+}
+
+/* ---------- quests ---------- */
+function genQuests() {
+  const hi = Math.max(0, ...S.b.map((n, i) => n ? i : 0));
+  const c = Math.max(cpsBase(), 1);
+  const pool = [
+    () => ({ type: 'tap', target: pick([250, 400, 600]) }),
+    () => ({ type: 'combo', target: pick([50, 75, 100]) }),
+    () => ({ type: 'buy', b: clamp(hi + pick([-1, 0, 1]), 0, 11), target: pick([5, 10, 15, 20]) }),
+    () => ({ type: 'gold', target: pick([1, 2]) }),
+    () => ({ type: 'over', target: pick([1, 2]) }),
+    () => ({ type: 'crit', target: pick([15, 25, 40]) }),
+    () => ({ type: 'earn', target: Math.max(1000, Math.round(c * 1500)) }),
+    () => ({ type: 'crate', target: pick([1, 2]) })
+  ];
+  if (S.pres.n > 0) pool.push(() => ({ type: 'mg', target: pick([1, 2]) }));
+  const list = [], types = {};
+  let guard = 0;
+  while (list.length < 3 && guard++ < 60) {
+    const q = pick(pool)();
+    if (types[q.type]) continue;
+    types[q.type] = 1; q.prog = 0; q.done = false; q.claimed = false; list.push(q);
+  }
+  list.forEach((q, i) => q.kind = i === 2 ? 'rare' : 'common');
+  S.q.day = dayKey(); S.q.list = list;
+}
+function qDone(q) { q.done = true; H.toast('📋 Quest complete: <b>' + questText(q) + '</b>'); H.dirty(['more']); }
+function qAdd(type, n, b) {
+  for (const q of S.q.list) {
+    if (q.type !== type || q.done || (type === 'buy' && q.b !== b)) continue;
+    q.prog += n;
+    if (q.prog >= q.target) { q.prog = q.target; qDone(q); }
+  }
+}
+function qMax(type, v) {
+  for (const q of S.q.list) {
+    if (q.type !== type || q.done) continue;
+    if (v > q.prog) q.prog = Math.min(v, q.target);
+    if (q.prog >= q.target) qDone(q);
+  }
+}
+function questText(q) { return CFG.quests[q.type](q.target, q.b); }
+function questReward() { return Math.max(2000, cpsBase() * 600); }
+function claimQuest(i) {
+  const q = S.q.list[i]; if (!q || !q.done || q.claimed) return false;
+  q.claimed = true; S.q.done++; const r = questReward(); earn(r); addCrate(q.kind, 1, true);
+  H.toast(`🎁 Quest reward: <b>${fmt(r)}</b> + ${CFG.crates[q.kind].name}`); H.sfx('chime');
+  markDirty('more', 'fri'); return true;
+}
+
+/* ---------- achievements (60+) ---------- */
+const ACH = [];
+(function buildAch() {
+  const A = CFG.ach, add = (id, name, desc, icon, test) => ACH.push({ id, name, desc, icon, test });
+  A.taps.forEach(([n, nm, ic]) => add('tap' + n, nm, `Tap ${fmt(n)} time${n > 1 ? 's' : ''}`, ic, () => S.taps >= n));
+  A.life.forEach(([n, nm, ic]) => add('life' + n, nm, `Earn ${fmt(n)} ${CFG.brand.currency} in total`, ic, () => S.life >= n));
+  A.cps.forEach(([n, nm, ic]) => add('cps' + n, nm, `Reach ${fmt(n)} ${CFG.brand.currency} per second`, ic, () => S.st.bestCps >= n));
+  CFG.buildings.forEach((b, i) => {
+    add('bf' + i, A.bFirst.replace('{b}', b.name), `Buy your first ${b.name}`, b.icon, () => S.b[i] >= 1);
+    add('b50' + i, A.bFifty.replace('{b}', b.name), `Own 50 ${b.name}s`, b.icon, () => S.b[i] >= 50);
+  });
+  A.combo.forEach(([n, nm, ic]) => add('combo' + n, nm, `Reach a ${n} combo`, ic, () => S.st.combo >= n));
+  A.over.forEach(([n, nm, ic]) => add('over' + n, nm, `Reach ${CFG.brand.overcharge} ${n} time${n > 1 ? 's' : ''}`, ic, () => S.st.over >= n));
+  A.gold.forEach(([n, nm, ic]) => add('gold' + n, nm, `Catch ${n} ${CFG.brand.golden}${n > 1 ? 's' : ''}`, ic, () => S.st.gold >= n));
+  A.crit.forEach(([n, nm, ic]) => add('crit' + n, nm, `Land ${fmt(n)} critical hits`, ic, () => S.st.crits >= n));
+  A.crate.forEach(([n, nm, ic]) => add('crate' + n, nm, `Open ${n} crate${n > 1 ? 's' : ''}`, ic, () => S.st.crates >= n));
+  A.flav.forEach(([n, nm, ic]) => add('flav' + n, nm, `Collect ${n} flavours`, ic, () => ownedCount() >= n));
+  const O = A.other;
+  add('ultra', O.ultra[0], 'Collect every Ultra flavour', O.ultra[1], () => ULTRA_IDS.every(owned));
+  add('legend', O.legend[0], 'Collect every Legendary flavour', O.legend[1], () => CFG.flavours.filter(f => f.r === 'legendary').every(f => owned(f.id)));
+  add('all', O.all[0], 'Collect every non-seasonal flavour', O.all[1], () => CFG.flavours.filter(f => !f.season).every(f => owned(f.id)));
+  add('pres1', O.pres1[0], `${CFG.brand.recycle} once`, O.pres1[1], () => S.pres.n >= 1);
+  add('pres5', O.pres5[0], `${CFG.brand.recycle} 5 times`, O.pres5[1], () => S.pres.n >= 5);
+  add('pres10', O.pres10[0], `${CFG.brand.recycle} 10 times`, O.pres10[1], () => S.pres.n >= 10);
+  add('streak', O.streak[0], 'Reach a 7-day login streak', O.streak[1], () => S.daily.streak >= 7);
+  add('mg10', O.mg10[0], 'Play 10 mini-games', O.mg10[1], () => S.st.mg >= 10);
+  add('quest10', O.quest10[0], 'Complete 10 daily quests', O.quest10[1], () => S.q.done >= 10);
+  add('hour1', O.hour1[0], 'Play for one hour', O.hour1[1], () => S.st.time >= 3600);
+  add('lv10', O.lv10[0], 'Level a flavour to 10', O.lv10[1], () => Object.values(S.fl).some(x => x.lv >= 10));
+})();
+function checkAch() {
+  let any = false;
+  for (const a of ACH) {
+    if (S.ach[a.id] || !a.test()) continue;
+    S.ach[a.id] = Date.now(); any = true;
+    H.toast(`${a.icon} Achievement: <b>${a.name}</b> (+1% production)`); H.sfx('chime');
+    if (achCount() % 5 === 0) addCrate('common', 1);
+  }
+  if (any) markDirty('more', 'fri');
+}
+
+/* ---------- daily login ---------- */
+function dailyInfo() {
+  const today = dayKey(), y = new Date(); y.setDate(y.getDate() - 1);
+  const claimed = S.daily.last === today;
+  let next = claimed ? S.daily.streak : (S.daily.last === dayKey(y) ? S.daily.streak + 1 : 1);
+  if (!claimed && next > 7) next = 1;
+  return { claimed, next };
+}
+function claimDaily() {
+  const d = dailyInfo(); if (d.claimed) return null;
+  const r = CFG.daily[d.next - 1];
+  S.daily.last = dayKey(); S.daily.streak = d.next;
+  if (r.t === 'cans') earn(Math.max(1000, cpsBase() * 60 * r.m)); else addCrate(r.k, r.n, true);
+  H.sfx('fanfare'); markDirty('more', 'fri'); return r;
+}
+
+/* ---------- prestige: RECYCLE ---------- */
+function tokenTarget() { return Math.floor(15 * Math.pow(Math.max(S.life, 0) / 1e9, 0.55)); }
+function tokenGain() { return S.run >= 1e9 ? Math.max(0, tokenTarget() - S.pres.earned) : 0; }
+function canRecycle() { return tokenGain() >= 1; }
+function startCans() { const l = treeLv('start'); return l ? 2500 * Math.pow(6, l - 1) : 0; }
+function doRecycle() {
+  if (!canRecycle()) return false;
+  const g = tokenGain();
+  S.pres.earned += g; S.pres.tokens += g; S.pres.n++;
+  S.cans = startCans(); S.run = 0; S.b = CFG.buildings.map(() => 0); S.up = {};
+  S.buffs = { prod: 0, tapF: 0, happy: 0 };
+  R.caff = 0; R.mode = 'normal'; R.combo = 0; R.gold = null;
+  H.mode('normal'); markDirty('bld', 'upg', 'more', 'fri'); H.sfx('fanfare');
+  return g;
+}
+function treeNode(id) { let n = null; for (const b in CFG.tree) CFG.tree[b].nodes.forEach(x => { if (x.id === id) n = x; }); return n; }
+function treeCost(node) { return Math.ceil(node.base * Math.pow(1.5, treeLv(node.id))); }
+function buyTree(id) {
+  const node = treeNode(id);
+  if (!node || treeLv(id) >= node.max) return false;
+  const c = treeCost(node); if (S.pres.tokens < c) return false;
+  S.pres.tokens -= c; S.pres.tree[id] = treeLv(id) + 1; markDirty('more'); H.sfx('buy'); return true;
+}
+
+/* ---------- offline progress ---------- */
+function offlineEarn(gapSec) { return cpsBase() * Math.min(gapSec, D.offCap * 3600) * D.offEff; }
+
+/* ---------- main logic step (also used by the headless balance simulator) ---------- */
+let _slow = 0;
+function tick(dt) {
+  R.clock += dt; S.st.time += dt;
+  const c = cps(); if (c > 0) earn(c * dt);
+  const cb = cpsBase(); if (cb > S.st.bestCps) S.st.bestCps = cb;
+  for (const k in S.buffs) if (S.buffs[k] > 0) { S.buffs[k] -= dt; if (S.buffs[k] <= 0) { S.buffs[k] = 0; if (k === 'happy') recalc(); } }
+  if (R.mode === 'over') {
+    R.modeT -= dt; R.caff = Math.max(0, 100 * R.modeT / D.overT);
+    if (R.modeT <= 0) { R.mode = 'crash'; R.modeT = D.crashT; R.caff = 0; H.mode('crash'); H.toast(`😵 <b>${CFG.brand.crash}</b> - taps are weaker for ${Math.round(D.crashT)}s`); }
+  } else if (R.mode === 'crash') {
+    R.modeT -= dt; if (R.modeT <= 0) { R.mode = 'normal'; H.mode('normal'); }
+  } else if (R.caff > 0) R.caff = Math.max(0, R.caff - 10 * D.drain * dt);
+  if (R.combo && R.clock - R.lastTap > D.comboT) R.combo = 0;
+  eventTick(dt);
+  _slow += dt;
+  if (_slow >= 1) {                       // once a second: slow checks
+    _slow = 0;
+    checkMilestones(); checkAch();
+    if (S.q.day !== dayKey()) { genQuests(); H.dirty(['more']); }
+  }
+}
+
+/* =====================================================================
+   6. AUDIO  -  everything is synthesised with the Web Audio API (no files)
+   The AudioContext is only created on the first user interaction.
+   ===================================================================== */
+const AU = {
+  ctx: null, master: null, nbuf: null,
+  init() {
+    try {
+      if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+      const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+      this.ctx = new C(); this.master = this.ctx.createGain(); this.master.gain.value = 0.55; this.master.connect(this.ctx.destination);
+      const n = this.ctx.sampleRate; this.nbuf = this.ctx.createBuffer(1, n, n);
+      const d = this.nbuf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    } catch (e) { this.ctx = null; }
+  },
+  ok() { return this.ctx && S.set.sound && this.ctx.state === 'running'; },
+  noise(dur, f0, f1, vol, type = 'bandpass', q = 0.8, when = 0) {
+    if (!this.ok()) return;
+    const c = this.ctx, t = c.currentTime + when, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = this.nbuf; s.loop = true; f.type = type; f.Q.value = q;
+    f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(this.master); s.start(t); s.stop(t + dur + 0.05);
+  },
+  tone(freq, dur, type = 'sine', vol = 0.12, when = 0, f1) {
+    if (!this.ok()) return;
+    const c = this.ctx, t = c.currentTime + when, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + 0.05);
+  },
+  psst() { this.tone(1500, 0.05, 'square', 0.06, 0, 380); this.noise(0.24, 7500, 2200, 0.32, 'highpass', 0.7); },
+  fizz() { this.noise(0.5, 9000, 5000, 0.1, 'highpass', 0.5); },
+  crit() { this.tone(880, 0.09, 'square', 0.1); this.tone(1320, 0.16, 'square', 0.1, 0.07); this.noise(0.3, 6000, 1500, 0.3, 'highpass'); },
+  fanfare() { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => this.tone(f, 0.28, 'triangle', 0.16, i * 0.09)); this.noise(0.6, 9000, 3000, 0.12, 'highpass', 0.5, 0.1); },
+  chime() { this.tone(1568, 0.5, 'sine', 0.13); this.tone(2093, 0.7, 'sine', 0.09, 0.09); },
+  gold() { [1175, 1568, 1976, 2349].forEach((f, i) => this.tone(f, 0.45, 'sine', 0.11, i * 0.07)); },
+  over() { this.tone(110, 0.6, 'sawtooth', 0.14, 0, 660); this.noise(0.7, 500, 8000, 0.25, 'bandpass', 1.2); },
+  buy() { this.tone(660, 0.07, 'square', 0.06); this.tone(990, 0.1, 'square', 0.06, 0.05); },
+  equip() { this.tone(440, 0.08, 'triangle', 0.12); this.tone(880, 0.1, 'triangle', 0.1, 0.06); },
+  pop() { this.noise(0.18, 3000, 300, 0.5, 'lowpass', 0.5); this.tone(200, 0.15, 'sine', 0.2, 0, 60); },
+  tick() { this.tone(1800, 0.03, 'square', 0.05); }
+};
+H.sfx = name => { try { if (AU[name]) AU[name](); } catch (e) {} };
+H.buzz = p => { try { if (S.set.haptic && navigator.vibrate) navigator.vibrate(p); } catch (e) {} };
+
+/* =====================================================================
+   7. FX  -  one canvas, capped particle count: bubbles, floating numbers, bats
+   ===================================================================== */
+const FX = {
+  cv: null, g: null, w: 0, h: 0, dpr: 1, parts: [], texts: 0, col: [124, 255, 0],
+  caps: [40, 90, 170], per: [1, 2, 4],
+  init() { this.cv = $('#fx'); this.g = this.cv.getContext('2d'); this.resize(); addEventListener('resize', () => this.resize()); },
+  resize() {
+    const r = $('#app').getBoundingClientRect(); this.dpr = Math.min(2, window.devicePixelRatio || 1);
+    this.w = r.width; this.h = r.height; this.cv.width = this.w * this.dpr; this.cv.height = this.h * this.dpr;
+  },
+  lvl() { return clamp(S.set.parts, 0, 2); },
+  rel(e) { const r = $('#app').getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; },
+  bubble(x, y, spread = 30) {
+    if (this.parts.length >= this.caps[this.lvl()]) return;
+    this.parts.push({ k: isHalloween() && Math.random() < 0.35 ? 'bat' : 'b', x: x + rnd(-spread, spread), y, vx: rnd(-20, 20), vy: rnd(-140, -60), r: rnd(2, 6), life: 0, max: rnd(0.8, 1.6), ph: rnd(0, 6) });
+  },
+  text(x, y, str, crit) {
+    if (this.texts >= 14) return; this.texts++;
+    this.parts.push({ k: 't', x: x + rnd(-14, 14), y, vx: rnd(-18, 18), vy: crit ? -150 : -110, s: str, crit, life: 0, max: crit ? 1.1 : 0.85 });
+  },
+  burst(x, y, n, col) {
+    n = Math.round(n * (this.lvl() + 1) / 2);
+    for (let i = 0; i < n && this.parts.length < this.caps[this.lvl()] + 40; i++) {
+      const a = rnd(0, 6.283), v = rnd(60, 260);
+      this.parts.push({ k: 's', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: rnd(2, 4), life: 0, max: rnd(0.4, 0.9), c: col });
+    }
+  },
+  draw(dt) {
+    const g = this.g, P = this.parts;
+    if (!P.length) { if (this._clear) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, this.cv.width, this.cv.height); this._clear = false; } return; }
+    this._clear = true;
+    g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); g.clearRect(0, 0, this.w, this.h);
+    const [r, gg, b] = this.col;
+    for (let i = P.length - 1; i >= 0; i--) {
+      const p = P[i]; p.life += dt;
+      if (p.life >= p.max) { if (p.k === 't') this.texts--; P.splice(i, 1); continue; }
+      const a = 1 - p.life / p.max;
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      if (p.k === 'b') {
+        p.x += Math.sin(p.life * 6 + p.ph) * 0.6;
+        g.strokeStyle = `rgba(${r},${gg},${b},${a * 0.8})`; g.lineWidth = 1.5;
+        g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.283); g.stroke();
+      } else if (p.k === 's') {
+        p.vy += 300 * dt; g.fillStyle = p.c || `rgb(${r},${gg},${b})`; g.globalAlpha = a;
+        g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.283); g.fill(); g.globalAlpha = 1;
+      } else if (p.k === 'bat') {
+        const f = Math.sin(p.life * 22) * 5; g.fillStyle = `rgba(30,10,45,${a})`; g.strokeStyle = `rgba(255,122,0,${a * 0.8})`; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(p.x, p.y); g.quadraticCurveTo(p.x - 9, p.y - 10 - f, p.x - 15, p.y - 2);
+        g.quadraticCurveTo(p.x - 9, p.y + 1, p.x - 5, p.y + 4); g.lineTo(p.x, p.y + 1); g.lineTo(p.x + 5, p.y + 4);
+        g.quadraticCurveTo(p.x + 9, p.y + 1, p.x + 15, p.y - 2); g.quadraticCurveTo(p.x + 9, p.y - 10 - f, p.x, p.y); g.fill(); g.stroke();
+      } else {
+        g.globalAlpha = Math.min(1, a * 1.6); g.font = `${p.crit ? 38 : 26}px "Bebas Neue",Impact,sans-serif`; g.textAlign = 'center';
+        g.lineWidth = 4; g.strokeStyle = 'rgba(0,0,0,.8)'; g.strokeText(p.s, p.x, p.y);
+        g.fillStyle = p.crit ? '#ffd400' : '#fff'; g.fillText(p.s, p.x, p.y); g.globalAlpha = 1;
+      }
+    }
+  }
+};
+
+/* =====================================================================
+   8. CAN ART  -  original generic can: dark body, flavour-colour bands and
+   diagonal "claw-scratch" slashes. No real brand logo or can design is copied.
+   ===================================================================== */
+let _cid = 0;
+function wrapName(n) {
+  if (n.length <= 9) return [n];
+  const lines = []; let cur = '';
+  n.split(' ').forEach(w => { if (cur && (cur + ' ' + w).length > 10) { lines.push(cur); cur = w; } else cur = (cur ? cur + ' ' : '') + w; });
+  if (cur) lines.push(cur); return lines.slice(0, 4);
+}
+function canSVG(f, o = {}) {
+  const id = 'k' + (_cid++), c = f.c, c2 = shade(c, -0.55), cls = o.cls ? `class="${o.cls}"` : '';
+  const body = 'M50 38 L150 38 L150 46 Q158 54 158 72 L158 282 Q158 298 142 302 L58 302 Q42 298 42 282 L42 72 Q42 54 50 46 Z';
+  if (o.sil) {
+    return `<svg viewBox="0 0 200 330" ${cls}><path d="${body}" fill="#0c0c10" stroke="#2a2a33" stroke-width="3"/><text x="100" y="196" text-anchor="middle" font-family="Bebas Neue,Impact" font-size="90" fill="#25252d">?</text></svg>`;
+  }
+  const lines = o.noText ? [] : wrapName(f.name.toUpperCase());
+  const longest = Math.max(1, ...lines.map(l => l.length));
+  const fs = clamp(100 / (longest * 0.46), 14, 34);
+  const y0 = 190 - (lines.length - 1) * fs * 0.52;
+  const text = lines.map((l, i) => `<text x="100" y="${(y0 + i * fs * 1.04).toFixed(1)}" text-anchor="middle" font-family="Bebas Neue,Impact,sans-serif" font-size="${fs.toFixed(1)}" letter-spacing="1" fill="#fff" stroke="#000" stroke-width="3.5" paint-order="stroke">${l}</text>`).join('');
+  return `<svg viewBox="0 0 200 330" ${cls} xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="${id}b" x1="0" x2="1"><stop offset="0" stop-color="#040405"/><stop offset=".3" stop-color="#1c1c21"/><stop offset=".55" stop-color="#0e0e11"/><stop offset="1" stop-color="#030304"/></linearGradient>
+<linearGradient id="${id}a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="${c2}"/></linearGradient>
+<linearGradient id="${id}m" x1="0" x2="1"><stop offset="0" stop-color="#7d8088"/><stop offset=".4" stop-color="#e8eaee"/><stop offset="1" stop-color="#5e6168"/></linearGradient>
+<clipPath id="${id}c"><path d="${body}"/></clipPath>
+</defs>
+<path d="${body}" fill="url(#${id}b)" stroke="${c}" stroke-width="2" stroke-opacity=".7"/>
+<g clip-path="url(#${id}c)">
+<rect x="40" y="66" width="120" height="13" fill="url(#${id}a)"/>
+<rect x="40" y="276" width="120" height="14" fill="url(#${id}a)"/>
+<path d="M150 82 L96 276 L82 276 L136 82Z" fill="url(#${id}a)" opacity=".9"/>
+<path d="M170 96 L112 276 L106 276 L164 96Z" fill="${c}" opacity=".75"/>
+<path d="M118 82 L64 276 L56 276 L110 82Z" fill="${c}" opacity=".55"/>
+<path d="M90 96 L42 252 L42 224 L74 96Z" fill="${c}" opacity=".35"/>
+<rect x="50" y="48" width="10" height="240" fill="#fff" opacity=".09"/>
+${text}
+</g>
+<ellipse cx="100" cy="40" rx="51" ry="9" fill="url(#${id}m)"/>
+<ellipse cx="100" cy="39" rx="40" ry="5.5" fill="#26262b"/>
+<rect x="87" y="34" width="26" height="8" rx="4" fill="#d6d9df" stroke="#6a6d74"/>
+<ellipse cx="100" cy="301" rx="58" ry="7" fill="url(#${id}m)" opacity=".9"/>
+</svg>`;
+}
+const rarTag = r => `<span class="tag c-${r}">${CFG.rarities[r].name.toUpperCase()}</span>`;
+
+/* =====================================================================
+   9. UI
+   ===================================================================== */
+const UI = { dirty: { bld: 1, upg: 1, fri: 1, more: 1 }, last: {}, bldEls: [], goldEl: null };
+const ACT = {};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function setText(el, t) { if (el.__t !== t) { el.textContent = t; el.__t = t; } }
+
+/* ---------- modal / toast ---------- */
+let _onClose = null;
+function modal(html, opts = {}) {
+  const m = $('#modal'); m.innerHTML = `<div class="mbox">${html}</div>`; m.hidden = false;
+  m.dataset.sticky = opts.sticky ? '1' : ''; _onClose = opts.onClose || null;
+}
+function closeModal() {
+  const m = $('#modal'); if (m.hidden) return;
+  m.hidden = true; m.innerHTML = ''; const f = _onClose; _onClose = null; if (f) f();
+}
+H.toast = html => {
+  const box = $('#toasts'); if (!box) return;
+  const t = document.createElement('div'); t.className = 'toast'; t.innerHTML = html; box.appendChild(t);
+  while (box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => t.remove(), 3300);
+};
+H.dirty = what => { (what || []).forEach(k => UI.dirty[k] = 1); };
+H.mode = m => { document.body.classList.toggle('over', m === 'over'); document.body.classList.toggle('crash', m === 'crash'); };
+H.themeChanged = () => applyTheme();
+
+/* ---------- theme (accent colour follows the active flavour) ---------- */
+function applyTheme() {
+  const f = FL[S.eq[0]] || CFG.flavours[0], hallo = isHalloween();
+  document.body.classList.toggle('hallo', hallo);
+  const col = hallo ? '#ff7a00' : f.c, [r, g, b] = hexRgb(col);
+  const root = document.documentElement.style;
+  root.setProperty('--acc', col); root.setProperty('--acc-rgb', `${r},${g},${b}`);
+  FX.col = [r, g, b];
+  const tm = document.querySelector('meta[name=theme-color]'); if (tm) tm.content = hallo ? '#0b0412' : '#050505';
+  $('#can').innerHTML = canSVG(f);
+  renderEqChips();
+}
+function renderEqChips() {
+  $('#eqchips').innerHTML = S.eq.map(id => {
+    const f = FL[id], lv = flavLv(id);
+    return `<button class="eqchip" data-act="tab" data-v="fri" style="border-color:${f.c}66">${canSVG(f, { noText: true })}<div><b>${esc(f.name)}</b><span>${perkText(f.perk[0], perkVal(f, lv))}</span></div></button>`;
+  }).join('') || `<span class="sm">No flavour equipped</span>`;
+}
+
+/* ---------- tabs ---------- */
+function showTab(name) {
+  R.tab = name;
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'v-' + name));
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+  UI.dirty[name] = 1; renderActive(true);
+}
+function renderActive(force) {
+  const t = R.tab;
+  if (t === 'bld') { if (!UI.bldEls.length) buildBldList(); updBld(); }
+  else if (t === 'upg') renderUpg(force);
+  else if (t === 'fri') { if (UI.dirty.fri || force) { renderFri(); UI.dirty.fri = 0; } }
+  else if (t === 'more') { if (UI.dirty.more || force) { renderMore(); UI.dirty.more = 0; } }
+}
+
+/* ---------- tap view ---------- */
+function handleTap(e) {
+  e.preventDefault(); AU.init();
+  const res = doTap(), [x, y] = FX.rel(e);
+  $('#can').animate([{ transform: 'scale(1)' }, { transform: res.crit ? 'scale(1.1,.88)' : 'scale(1.05,.93)', offset: 0.3 }, { transform: 'scale(1)' }], { duration: res.crit ? 200 : 130, easing: 'ease-out' });
+  FX.text(x, y - 16, '+' + fmt(res.v), res.crit);
+  const r = $('#can').getBoundingClientRect(), a = $('#app').getBoundingClientRect();
+  for (let i = 0; i < FX.per[FX.lvl()]; i++) FX.bubble(r.left - a.left + r.width / 2, r.top - a.top + r.height * 0.15, r.width * 0.2);
+  if (res.crit) {
+    FX.burst(x, y, 14); const app = $('#app'); app.classList.remove('shake'); void app.offsetWidth; app.classList.add('shake');
+    AU.crit(); H.buzz(28);
+  } else { AU.psst(); H.buzz(6); }
+}
+function updMeter() {
+  setText($('#combo-t'), R.combo > 1 ? `COMBO x${R.combo}  (×${comboMult().toFixed(2)})` : 'COMBO x0');
+  const lbl = $('#caff-lbl'), bar = $('#caff-bar');
+  let t = '', cls = '';
+  if (R.mode === 'over') { t = `${CFG.brand.overcharge} ${R.modeT.toFixed(1)}s`; cls = 'over'; }
+  else if (R.mode === 'crash') { t = `${CFG.brand.crash.toUpperCase()} ${Math.ceil(R.modeT)}s`; cls = 'crash'; }
+  else if (R.caff > 50) { t = `${CFG.brand.caffeine.toUpperCase()} BOOST +${Math.round((caffBoost() - 1) * 100)}%`; cls = 'hot'; }
+  else t = `${CFG.brand.caffeine.toUpperCase()} ${Math.round(R.caff)}%`;
+  setText(lbl, t); lbl.className = cls; bar.className = 'bar ' + cls;
+  $('#caff-fill').style.width = (R.mode === 'crash' ? 100 * R.modeT / D.crashT : R.caff) + '%';
+}
+function updBanners() {
+  const out = [], b = S.buffs;
+  if (b.prod > 0) out.push(`<span class="chip">✨ ×7 PRODUCTION ${Math.ceil(b.prod)}s</span>`);
+  if (b.tapF > 0) out.push(`<span class="chip">👆 ×5 TAPS ${Math.ceil(b.tapF)}s</span>`);
+  if (b.happy > 0) out.push(`<span class="chip">🍻 HAPPY HOUR -20% ${Math.ceil(b.happy)}s</span>`);
+  if (S.ev.limId) out.push(`<span class="chip pink">⏳ LIMITED: ${esc(FL[S.ev.limId].name)} · ${fmtTime((S.ev.limEnd - Date.now()) / 1000)}</span>`);
+  if (S.taps < 10) out.push(`<span class="chip">👆 TAP THE CAN!</span>`);
+  if (isHalloween()) out.push(`<span class="chip">🎃 ${CFG.brand.hallo.toUpperCase()}</span>`);
+  const h = out.join('');
+  if (UI.last.ban !== h) { UI.last.ban = h; $('#banners').innerHTML = h; }
+}
+const fmtCans = n => n < 1e6 && S.set.numFmt !== 'sci' ? Math.floor(n).toLocaleString('en-US') : fmt(n);
+function updHud() {
+  setText($('#cans'), fmtCans(S.cans));
+  setText($('#cps'), fmt(cps()));
+  setText($('#cpt'), fmt(tapBase() * tapMods()));
+}
+function uiGold(dt) {
+  const g = R.gold;
+  if (!g && UI.goldEl) { UI.goldEl.remove(); UI.goldEl = null; }
+  if (!g) return;
+  const W = FX.w, Hh = FX.h;
+  if (!UI.goldEl) {
+    const el = document.createElement('div'); el.className = 'gcan' + (g.type === 'ltd' ? ' ltd' : '');
+    el.innerHTML = canSVG(g.type === 'ltd' ? FL[S.ev.limId] : { c: '#ffd400', name: '' }, { noText: true });
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault(); e.stopPropagation(); AU.init();
+      const [x, y] = FX.rel(e); FX.burst(x, y, 26, '#ffd400'); catchGold();
+    });
+    $('#gold').appendChild(el); UI.goldEl = el;
+    g.dur = g.type === 'ltd' ? 13 : 10; g.y0 = rnd(0.22, 0.62) * Hh; g.dir = Math.random() < 0.5 ? 1 : -1;
+  }
+  g.t += dt;
+  const p = g.t / g.dur;
+  if (p >= 1) { R.gold = null; UI.goldEl.remove(); UI.goldEl = null; return; }
+  const x = g.dir > 0 ? -40 + p * (W + 80) : W + 40 - p * (W + 80);
+  UI.goldEl.style.transform = `translate(${x}px,${g.y0 + Math.sin(g.t * 3) * 34}px) rotate(${Math.sin(g.t * 5) * 14}deg)`;
+}
+
+/* ---------- buildings ---------- */
+function buildBldList() {
+  const box = $('#bld-list'); let h = '';
+  CFG.buildings.forEach((b, i) => {
+    h += `<div class="card bld" hidden>
+<div class="row"><div class="ico">${b.icon}</div><div class="grow"><div class="nm">${esc(b.name)}</div><div class="ds">${esc(b.desc)}</div><div class="sm rt"></div></div><div class="own">0</div></div>
+<div class="btns"><button class="btn" data-act="buy" data-i="${i}" data-n="1"></button><button class="btn" data-act="buy" data-i="${i}" data-n="10"></button><button class="btn alt" data-act="buy" data-i="${i}" data-n="max"></button></div></div>`;
+  });
+  h += `<div class="card locked" id="bld-next" hidden><div class="row"><div class="ico">❓</div><div class="grow"><div class="nm">???</div><div class="ds">Keep earning to discover the next building.</div></div></div></div>`;
+  box.innerHTML = h;
+  UI.bldEls = [...box.querySelectorAll('.bld')].map(el => ({ el, own: el.querySelector('.own'), rt: el.querySelector('.rt'), btns: el.querySelectorAll('.btns .btn') }));
+}
+function updBld() {
+  if (!UI.bldEls.length) return;
+  let anyHidden = false;
+  UI.bldEls.forEach((x, i) => {
+    const b = CFG.buildings[i], show = S.b[i] > 0 || S.run >= b.cost * 0.35;
+    x.el.hidden = !show;
+    if (!show) { anyHidden = true; return; }
+    setText(x.own, S.b[i]);
+    const each = bldCpsEach(i), tot = each * S.b[i], all = cpsBase();
+    const nxt = MS.at.find(a => S.b[i] < a);
+    setText(x.rt, `${fmt(each)}/s each · ${S.b[i] ? fmt(tot) + '/s (' + Math.round(tot / all * 100) + '%)' : 'not owned'}${nxt ? ' · next ×2 at ' + nxt : ''}`);
+    const mx = bMax(i), c1 = bCost(i, 1), c10 = bCost(i, 10);
+    const set = (btn, label, sub, ok) => { const t = label + '|' + sub; if (btn.__t !== t) { btn.innerHTML = `${label}<small>${sub}</small>`; btn.__t = t; } btn.disabled = !ok; };
+    set(x.btns[0], 'BUY ×1', fmt(c1), S.cans >= c1);
+    set(x.btns[1], 'BUY ×10', fmt(c10), S.cans >= c10);
+    set(x.btns[2], 'MAX' + (mx ? ' (' + mx + ')' : ''), mx ? fmt(bCost(i, mx)) : '-', mx > 0);
+  });
+  $('#bld-next').hidden = !anyHidden;
+}
+
+/* ---------- upgrades ---------- */
+function renderUpg(force) {
+  const list = UPGS.filter(upgVisible).sort((a, b) => a.cost - b.cost).slice(0, 12);
+  const sig = list.map(u => u.id + (S.cans >= u.cost ? '+' : '-')).join();
+  if (!force && UI.last.upg === sig) return;
+  UI.last.upg = sig;
+  const hidden = UPGS.filter(u => !S.up[u.id] && u.req() && !upgVisible(u)).length;
+  $('#upg-list').innerHTML = `<div class="sec-h">UPGRADES<small>${S.st.upg} bought${hidden ? ' · ' + hidden + ' more coming' : ''}</small></div>` +
+    (list.length ? list.map(u => `<div class="card upg"><div class="row"><div class="ico" style="font-size:28px">${u.icon}</div><div class="grow"><div class="nm">${esc(u.name)}</div><div class="ds">${esc(u.desc())}</div></div>
+<button class="btn" data-act="upg" data-id="${u.id}" ${S.cans >= u.cost ? '' : 'disabled'}>${fmt(u.cost)}</button></div></div>`).join('')
+      : `<div class="empty">Nothing to show yet.<br>Keep tapping and building - new upgrades appear as you get close to affording them.</div>`);
+}
+
+/* ---------- fridge (collection album) ---------- */
+function fridgeList() { return CFG.flavours.filter(f => flavAvail(f) || owned(f.id)); }
+function renderFri() {
+  const list = fridgeList(), have = list.filter(f => owned(f.id)).length, pct = Math.floor(have / list.length * 100);
+  const sm = slotsMax(), hints = [null, 'Unlock: 10M lifetime ' + CFG.brand.currency.toLowerCase(), 'Unlock: ' + CFG.brand.recycle + ' once', CFG.brand.plant + ' (Luck)', CFG.brand.plant + ' (Luck)'];
+  let slots = '';
+  for (let i = 0; i < Math.min(5, sm + 1); i++) {
+    if (i < sm) { const id = S.eq[i]; slots += id ? `<button class="slot" data-act="flav" data-id="${id}" style="border-style:solid;border-color:${FL[id].c}">${canSVG(FL[id], { noText: true })}</button>` : `<div class="slot">empty<br>slot</div>`; }
+    else slots += `<div class="slot lock">🔒<br>${hints[i] || ''}</div>`;
+  }
+  const crates = ['common', 'rare', 'epic'].map(k => {
+    const n = S.crates[k] || 0, c = CFG.crates[k], buy = k !== 'epic';
+    return `<div class="crate ${n ? 'has' : ''}"><div class="ci">${c.icon}</div><div class="cc">${n}</div><div class="sm">${c.name.replace(' Crate', '')}</div>
+<button class="btn ${n ? '' : 'alt'}" style="min-height:44px;width:90%;margin-top:6px;padding:0" data-act="crate-open" data-k="${k}" ${n ? '' : 'disabled'}>OPEN</button>
+${buy ? `<button class="btn alt" style="min-height:44px;width:90%;margin-top:4px;padding:0;font-size:11px" data-act="crate-buy" data-k="${k}" ${S.cans >= crateBuyCost(k) ? '' : 'disabled'}>Buy ${fmt(crateBuyCost(k))}</button>` : ''}</div>`;
+  }).join('');
+  const cells = list.slice().sort((a, b) => RAR_ORDER.indexOf(a.r) - RAR_ORDER.indexOf(b.r)).map(f => {
+    const o = owned(f.id), lv = flavLv(f.id);
+    return `<button class="cell r-${f.r} ${o ? '' : 'u'}" data-act="flav" data-id="${f.id}">${S.eq.includes(f.id) ? '<span class="eq">★</span>' : ''}${o ? `<span class="lv">Lv${lv}</span>` : ''}${canSVG(f, o ? { noText: true } : { sil: true })}<div class="cn">${o ? esc(f.name) : '???'}</div></button>`;
+  }).join('');
+  $('#fri-body').innerHTML = `<div class="sec-h">${CFG.brand.fridge.toUpperCase()}<small>${have}/${list.length} · ${pct}% complete</small></div>
+<div class="bar thin prog"><i style="width:${pct}%"></i></div>
+<div class="sec-h" style="font-size:18px">EQUIPPED <small>${S.eq.length}/${sm} slots</small></div><div class="slots">${slots}</div>
+<div class="sec-h" style="font-size:18px">${CFG.brand.crate.toUpperCase()}S <small>earned in-game · never real money</small></div><div class="crates">${crates}</div>
+<div class="sec-h" style="font-size:18px">COLLECTION</div><div class="grid">${cells}</div>`;
+}
+function flavModal(id) {
+  const f = FL[id], o = owned(id), lv = flavLv(id);
+  const hint = f.ms !== undefined ? `Unlocks at ${fmt(f.ms)} lifetime ${CFG.brand.currency.toLowerCase()}, or from ${CFG.brand.crate}s & drops.` :
+    f.season ? `Seasonal: only during the ${CFG.brand.hallo}. Found in crates & Limited Drops.` :
+    f.r === 'limited' ? `Limited: found in ${CFG.brand.crate}s, rare drops and Limited Drop events.` : `Found in ${CFG.brand.crate}s and as rare tap drops.`;
+  const next = o && lv < 10 ? `<p>Next level: <b class="hl">${perkText(f.perk[0], perkVal(f, lv + 1))}</b></p>` : '';
+  modal(`${canSVG(f, o ? { cls: 'big-can' } : { sil: true, cls: 'big-can' })}
+<h2 style="color:${o ? f.c : '#666'}">${o ? esc(f.name) : '???'}</h2><div>${rarTag(f.r)}</div>
+${o ? `<p>Level <b class="hl">${lv}/10</b> · duplicates level it up</p><div class="bar thin prog" style="margin:6px 0"><i style="width:${lv * 10}%"></i></div>
+<p style="color:#fff;font-size:15px"><b>${perkText(f.perk[0], perkVal(f, lv))}</b></p>${next}` : `<p>${hint}</p><p>Perk: <b class="hl">${perkText(f.perk[0], perkVal(f, 1))}</b></p>`}
+<div class="cb">${o ? (S.eq.includes(id) && S.eq.length === 1 ? `<button class="btn alt" disabled>EQUIPPED</button>` : `<button class="btn" data-act="equip" data-id="${id}">${S.eq.includes(id) ? 'UNEQUIP' : 'EQUIP'}</button>`) : ''}<button class="btn alt" data-act="close">CLOSE</button></div>`);
+}
+function crateModal(kind) {
+  if (!(S.crates[kind] > 0)) return;
+  AU.init(); modal(`<h2>${CFG.crates[kind].name.toUpperCase()}</h2><div class="crate-anim">${CFG.crates[kind].icon}</div><p>Cracking it open...</p>`, { sticky: true });
+  AU.fizz();
+  setTimeout(() => {
+    const res = openCrate(kind); if (!res) return closeModal();
+    const f = FL[res.id], more = S.crates[kind] > 0;
+    modal(`<div class="reveal">${canSVG(f, { cls: 'big-can' })}</div><h2 style="color:${f.c}">${esc(f.name)}</h2><div>${rarTag(f.r)}</div>
+<p style="color:#fff;font-size:15px">${res.isNew ? '🆕 <b>NEW FLAVOUR UNLOCKED!</b>' : res.refund ? `Max level! Refund <b class="hl">+${fmt(res.refund)}</b>` : `Duplicate! Now <b class="hl">Level ${res.lv}</b>`}</p>
+<p><b>${perkText(f.perk[0], perkVal(f, res.lv))}</b></p>
+<div class="cb">${more ? `<button class="btn" data-act="crate-open" data-k="${kind}">OPEN ANOTHER (${S.crates[kind]})</button>` : ''}<button class="btn alt" data-act="close">${res.isNew ? 'AWESOME' : 'OK'}</button></div>`);
+  }, 1100);
+}
+
+/* ---------- "More" hub: achievements, quests, mini-games, recycle, stats, settings ---------- */
+function renderMore() {
+  const el = $('#more-body'), sc = el.scrollTop, sub = R.sub;
+  const back = `<button class="btn alt back" data-act="back">‹ BACK</button>`;
+  let h = '';
+  if (!sub) h = moreMenu();
+  else if (sub === 'ach') h = back + achPage();
+  else if (sub === 'quests') h = back + questPage();
+  else if (sub === 'mg') h = back + mgPage();
+  else if (sub === 'recycle') h = back + recyclePage();
+  else if (sub === 'stats') h = back + statsPage();
+  else if (sub === 'settings') h = back + settingsPage();
+  el.innerHTML = h; el.scrollTop = sc;
+}
+function moreMenu() {
+  const d = dailyInfo(), qd = S.q.list.filter(q => q.done && !q.claimed).length, qc = S.q.list.filter(q => q.claimed).length;
+  const mgOn = S.pres.n >= 1, g = tokenGain();
+  const daily = `<div class="card" style="${d.claimed ? '' : 'border-color:var(--acc);box-shadow:0 0 16px rgba(var(--acc-rgb),.3)'}"><div class="row"><div style="font-size:30px">📅</div>
+<div class="grow"><div class="nm">DAILY REWARD</div><div class="ds">${d.claimed ? 'Claimed today · streak ' + S.daily.streak + '/7' : 'Day ' + d.next + ' reward is ready!'}</div></div>
+<button class="btn ${d.claimed ? 'alt' : ''}" data-act="daily-open">${d.claimed ? 'VIEW' : 'CLAIM'}</button></div></div>`;
+  const mi = (act, ic, t, s) => `<button class="mi" data-act="sub" data-v="${act}"><span class="mic">${ic}</span><span class="mt">${t}</span><span class="ms">${s}</span></button>`;
+  return `<div class="sec-h">MORE</div>${daily}<div class="menu">
+${mi('ach', '🏆', 'ACHIEVEMENTS', `${achCount()}/${ACH.length} · +${achCount()}% production`)}
+${mi('quests', '📋', 'DAILY QUESTS', qd ? `${qd} reward${qd > 1 ? 's' : ''} ready!` : `${qc}/3 claimed today`)}
+${mi('mg', '🕹️', 'MINI-GAMES', mgOn ? 'Free play every few minutes' : 'Unlocks after first ' + CFG.brand.recycle)}
+${mi('recycle', '♻️', CFG.brand.recycle.toUpperCase(), g ? `+${g} ${CFG.brand.tokenShort} ready!` : `${S.pres.tokens} ${CFG.brand.tokenShort} · ${S.pres.n} recycles`)}
+${mi('stats', '📊', 'STATS', `${fmtTime(S.st.time)} played`)}
+${mi('settings', '⚙️', 'SETTINGS', 'Sound, save, display')}
+</div><p class="sm" style="text-align:center;margin-top:18px">${esc(CFG.brand.name)} · ${esc(CFG.brand.tagline)}<br>No ads. No tracking. No real-money purchases.</p>`;
+}
+function achPage() {
+  const got = ACH.filter(a => S.ach[a.id]), left = ACH.filter(a => !S.ach[a.id]);
+  const row = (a, on) => `<div class="card ach ${on ? 'got' : ''}"><div class="ai">${a.icon}</div><div class="grow"><div class="nm" style="font-size:18px">${esc(a.name)}</div><div class="ds">${esc(a.desc)}</div></div>${on ? '<span class="hl">+1%</span>' : ''}</div>`;
+  return `<div class="sec-h">ACHIEVEMENTS<small>${got.length}/${ACH.length} · +${got.length}% production</small></div>` + got.map(a => row(a, 1)).join('') + left.map(a => row(a, 0)).join('');
+}
+function questPage() {
+  const left = new Date(); left.setHours(24, 0, 0, 0);
+  return `<div class="sec-h">DAILY QUESTS<small>new in ${fmtTime((left - Date.now()) / 1000)}</small></div>` + S.q.list.map((q, i) => {
+    const pct = Math.floor(q.prog / q.target * 100);
+    return `<div class="card"><div class="nm" style="font-size:18px">${esc(questText(q))}</div>
+<div class="bar thin prog" style="margin:8px 0"><i style="width:${pct}%"></i></div>
+<div class="row"><div class="grow sm">${q.type === 'earn' ? fmt(q.prog) + ' / ' + fmt(q.target) : Math.floor(q.prog) + ' / ' + q.target} · Reward: ${fmt(questReward(q))} + ${CFG.crates[q.kind].name}</div>
+<button class="btn" data-act="claimq" data-i="${i}" ${q.done && !q.claimed ? '' : 'disabled'}>${q.claimed ? 'CLAIMED' : 'CLAIM'}</button></div></div>`;
+  }).join('') + `<p class="sm" style="text-align:center">${S.q.done} quests completed in total</p>`;
+}
+function mgPage() {
+  if (S.pres.n < 1) return `<div class="sec-h">MINI-GAMES</div><div class="empty">🔒 Mini-games unlock after your first ${CFG.brand.recycle}.</div>`;
+  const defs = [['shake', '📳', 'SHAKE IT', 'Shake your phone to build pressure, then POP the can!'], ['stack', '🧱', 'CAN STACK', 'Time your taps to stack cans into a tall tower.'], ['match', '🃏', 'FLAVOUR MATCH', 'Match the flavour pairs in 30 seconds.']];
+  return `<div class="sec-h">MINI-GAMES<small>free · rewards scale with your income</small></div>` + defs.map(([k, ic, t, d]) => {
+    const cd = Math.max(0, (S.mg[k] - Date.now()) / 1000);
+    return `<div class="card"><div class="row"><div style="font-size:32px">${ic}</div><div class="grow"><div class="nm">${t}</div><div class="ds">${d}</div>${k === 'stack' ? `<div class="sm">Best tower: ${S.mg.bestStack}</div>` : ''}</div>
+<button class="btn" data-act="mg" data-k="${k}" ${cd > 0 ? 'disabled' : ''}>${cd > 0 ? fmtTime(cd) : 'PLAY'}</button></div></div>`;
+  }).join('');
+}
+function recyclePage() {
+  const g = tokenGain(), pct = clamp(S.run / 1e9 * 100, 0, 100), br = R.treeBr || 'tap';
+  const head = `<div class="sec-h">${CFG.brand.recycle.toUpperCase()}<small>${S.pres.n} done</small></div>
+<div class="card"><div class="ds">Melt it all down for <b class="hl">${CFG.brand.tokens}</b>. You keep your flavours, achievements, crates and mini-game access. Buildings, upgrades and ${CFG.brand.currency.toLowerCase()} reset.</div>
+<div class="stat"><span>This run</span><b>${fmt(S.run)}</b></div><div class="stat"><span>Lifetime</span><b>${fmt(S.life)}</b></div>
+<div class="stat"><span>${CFG.brand.tokenShort} earned (+2% production each)</span><b>${S.pres.earned} → +${Math.round(S.pres.earned * 2)}%</b></div>
+${S.run < 1e9 ? `<div class="bar thin prog" style="margin:10px 0 4px"><i style="width:${pct}%"></i></div><div class="sm">Reach 1B ${CFG.brand.currency.toLowerCase()} this run to ${CFG.brand.recycle.toLowerCase()} (${pct.toFixed(1)}%)</div>` : ''}
+<button class="btn block" style="margin-top:10px" data-act="recycle" ${g >= 1 ? '' : 'disabled'}>${g >= 1 ? `♻️ ${CFG.brand.recycle.toUpperCase()} FOR +${g} ${CFG.brand.tokenShort.toUpperCase()}` : 'NOT READY'}</button></div>
+<div class="sec-h">${CFG.brand.plant.toUpperCase()}<small>${S.pres.tokens} ${CFG.brand.tokenShort} to spend</small></div>
+<div class="tabs2">${Object.keys(CFG.tree).map(k => `<button class="${br === k ? 'on' : ''}" data-act="treebr" data-v="${k}">${CFG.tree[k].name.toUpperCase()}</button>`).join('')}</div>`;
+  const nodes = CFG.tree[br].nodes.map(n => {
+    const lv = treeLv(n.id), max = lv >= n.max, c = treeCost(n);
+    return `<div class="card"><div class="row"><div class="grow"><div class="nm" style="font-size:18px">${esc(n.name)} <span class="hl">${lv}/${n.max}</span></div><div class="ds">${esc(n.desc)}</div></div>
+<button class="btn" data-act="tree" data-id="${n.id}" ${!max && S.pres.tokens >= c ? '' : 'disabled'}>${max ? 'MAX' : c + ' ♻'}</button></div></div>`;
+  }).join('');
+  return head + nodes;
+}
+function statsPage() {
+  const cur = CFG.brand.currency.toLowerCase();
+  const rows = [['Lifetime ' + cur, fmt(S.life)], ['This run', fmt(S.run)], ['Total taps', S.taps.toLocaleString('en-US')], ['Time played', fmtTime(S.st.time)],
+    ['Biggest combo', S.st.combo], ['Highest ' + cur + '/sec', fmt(S.st.bestCps)], ['Critical hits', S.st.crits.toLocaleString('en-US')], [CFG.brand.overcharge + ' times', S.st.over],
+    [CFG.brand.golden + 's caught', S.st.gold], [CFG.brand.crate + 's opened', S.st.crates], ['Mini-games played', S.st.mg], [CFG.brand.recycle + 's', S.pres.n], ['Flavours collected', ownedCount() + '/' + fridgeList().length],
+    ['Achievements', achCount() + '/' + ACH.length], ['Quests completed', S.q.done], ['Login streak', S.daily.streak + ' days']];
+  return `<div class="sec-h">STATS</div><div class="card">${rows.map(r => `<div class="stat"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('')}</div>`;
+}
+function settingsPage() {
+  const s = S.set, seg = (k, opts) => `<div class="seg">${opts.map(([v, l]) => `<button class="${String(s[k]) === String(v) ? 'on' : ''}" data-act="set" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div>`;
+  return `<div class="sec-h">SETTINGS</div><div class="card">
+<div class="tog"><span>Sound</span>${seg('sound', [[true, 'ON'], [false, 'OFF']])}</div>
+<div class="tog"><span>Haptics</span>${seg('haptic', [[true, 'ON'], [false, 'OFF']])}</div>
+<div class="tog"><span>Particles</span>${seg('parts', [[0, 'LOW'], [1, 'MED'], [2, 'HIGH']])}</div>
+<div class="tog"><span>Numbers</span>${seg('numFmt', [['short', '1.2M'], ['sci', '1e6'], ['full', '1,234']])}</div>
+<div class="tog"><span>${esc(CFG.brand.hallo)}</span>${seg('hallo', [['auto', 'AUTO'], ['on', 'ON'], ['off', 'OFF']])}</div></div>
+<div class="sec-h">SAVE DATA</div><div class="card">
+<p class="ds">Autosaves every 10 seconds. Export a code to move your progress to another device.</p>
+<div style="display:flex;gap:8px"><button class="btn alt grow" data-act="export">EXPORT</button><button class="btn alt grow" data-act="import">IMPORT</button></div>
+<button class="btn red block" style="margin-top:10px" data-act="reset">RESET GAME</button></div>
+<p class="sm" style="text-align:center">Save v${SAVE_VERSION} · ${esc(CFG.brand.name)}</p>`;
+}
+
+/* ---------- daily login popup ---------- */
+function dailyModal() {
+  const d = dailyInfo();
+  const days = CFG.daily.map((r, i) => `<div class="day ${i + 1 < d.next || (d.claimed && i + 1 <= d.next) ? 'done' : ''} ${i + 1 === d.next ? 'cur' : ''}">Day<b>${i + 1}</b>${r.t === 'cans' ? '🥤' : CFG.crates[r.k].icon}</div>`).join('');
+  const r = CFG.daily[d.next - 1];
+  modal(`<h2>DAILY REWARD</h2><p>${d.claimed ? 'Come back tomorrow to keep your streak!' : 'Log in every day. Day 7 is an EPIC crate!'}</p><div class="days">${days}</div>
+<p style="color:#fff">${d.claimed ? 'Streak: <b class="hl">' + S.daily.streak + '</b> days' : "Today's reward: <b class='hl'>" + (r.t === 'cans' ? fmt(Math.max(1000, cpsBase() * 60 * r.m)) + ' ' + CFG.brand.currency : r.label) + '</b>'}</p>
+<div class="cb">${d.claimed ? '' : `<button class="btn" data-act="daily-claim">CLAIM</button>`}<button class="btn alt" data-act="close">${d.claimed ? 'CLOSE' : 'LATER'}</button></div>`);
+}
+
+/* =====================================================================
+   10. MINI-GAMES  (unlocked after the first Recycle; free, 4-minute cooldown)
+   ===================================================================== */
+const MG_CD = 240000;
+const mgReward = secs => Math.max(5000, cpsBase() * secs);
+function mgFinish(key, secs, title, detail) {
+  const gain = mgReward(secs); earn(gain);
+  S.mg[key] = Date.now() + MG_CD; S.st.mg++; qAdd('mg', 1); R.mgActive = null;
+  AU.fanfare(); markDirty('more');
+  modal(`<h2>${title}</h2><p>${detail}</p><div class="big">+${fmt(gain)}</div><p>${CFG.brand.currency}</p><div class="cb"><button class="btn" data-act="close">COLLECT</button></div>`, { onClose: () => { R.mgActive = null; } });
+}
+function startMG(key) {
+  if (S.pres.n < 1) return H.toast(`Mini-games unlock after your first ${CFG.brand.recycle}`);
+  if (S.mg[key] > Date.now()) return H.toast('Still on cooldown');
+  AU.init();
+  ({ shake: mgShake, stack: mgStack, match: mgMatch })[key]();
+}
+/* --- 1. Shake It: DeviceMotion (iOS needs a permission tap) + tap fallback --- */
+function mgShake() {
+  let pressure = 0, left = 25, lastHit = 0, over = false;
+  const add = n => { if (over) return; pressure = Math.min(100, pressure + n); AU.tick(); H.buzz(8); };
+  let last = null;                                   // last accelerometer sample; a shake = big change on any axis
+  const onMotion = e => {
+    const a = e.accelerationIncludingGravity; if (!a || over) return;
+    const cur = [a.x || 0, a.y || 0, a.z || 0], now = performance.now();
+    if (last && Math.abs(cur[0] - last[0]) + Math.abs(cur[1] - last[1]) + Math.abs(cur[2] - last[2]) > 14 && now - lastHit > 90) { lastHit = now; add(5); }
+    last = cur;
+  };
+  const pop = () => {
+    if (over) return; over = true; removeEventListener('devicemotion', onMotion); AU.pop(); H.buzz([60, 30, 120]);
+    const weak = pressure < 15;
+    mgFinish('shake', 20 + pressure * 5, weak ? '⏱ TIME UP' : '💥 POP!', weak ? 'Barely any pressure built up' : `Pressure reached ${Math.round(pressure)}%`);
+  };
+  modal(`<h2>SHAKE IT</h2><p>Shake your phone (or mash the button) to build pressure, then POP the can before time runs out!</p>
+<div class="bar pressure"><i id="mg-fill"></i></div><div class="big" id="mg-info">0%</div><div class="sm" id="mg-time">25s</div>
+<div class="cb"><button class="btn alt" id="mg-shake">💥 SHAKE</button><button class="btn" id="mg-pop">POP!</button></div>
+<button class="btn alt block" id="mg-motion" style="margin-top:8px">📳 Enable motion sensor</button><button class="btn alt block" data-act="close" style="margin-top:8px">QUIT</button>`,
+    { sticky: true, onClose: () => { over = true; removeEventListener('devicemotion', onMotion); R.mgActive = null; } });
+  $('#mg-shake').addEventListener('pointerdown', e => { e.preventDefault(); add(4); });
+  $('#mg-pop').addEventListener('click', pop);
+  $('#mg-motion').addEventListener('click', async () => {
+    try {
+      if (typeof DeviceMotionEvent !== 'undefined' && DeviceMotionEvent.requestPermission) {
+        if (await DeviceMotionEvent.requestPermission() !== 'granted') return H.toast('Motion permission denied - use the button');
+      }
+      addEventListener('devicemotion', onMotion); $('#mg-motion').textContent = '✅ Motion sensor on - shake!';
+    } catch (e) { H.toast('No motion sensor - use the button'); }
+  });
+  R.mgActive = { update(dt) {
+    if (over) return; left -= dt; pressure = Math.max(0, pressure - 5 * dt);
+    $('#mg-fill').style.width = pressure + '%'; setText($('#mg-info'), Math.round(pressure) + '%'); setText($('#mg-time'), Math.ceil(left) + 's');
+    if (left <= 0) pop();
+  } };
+}
+/* --- 2. Can Stack: timing game, height = reward --- */
+function mgStack() {
+  const W = 300, Hh = 420, BH = 22;
+  modal(`<h2>CAN STACK</h2><p>Tap to drop the sliding cans. Overhang gets trimmed - stack as high as you can!</p>
+<canvas id="mg-cv" class="mg" width="${W}" height="${Hh}" style="width:${W}px;max-width:100%"></canvas><div class="big" id="mg-info">0</div>
+<div class="cb"><button class="btn" id="mg-drop">DROP</button></div><button class="btn alt block" data-act="close" style="margin-top:8px">QUIT</button>`, { sticky: true, onClose: () => { R.mgActive = null; } });
+  const cv = $('#mg-cv'), g = cv.getContext('2d'), cols = CFG.flavours.map(f => f.c);
+  const blocks = [{ x: 80, w: 140 }]; let cur = { x: 0, w: 140, dir: 1 }, speed = 120, perfects = 0, over = false, wait = 0;
+  const drop = () => {
+    if (over) return; AU.psst();
+    const top = blocks[blocks.length - 1], dx = cur.x - top.x;
+    if (Math.abs(dx) < 5) { cur.x = top.x; perfects++; H.buzz(15); }
+    else {
+      const ov = cur.w - Math.abs(dx);
+      if (ov <= 4) { over = true; wait = 1.2; return; }
+      cur.w = ov; if (dx < 0) cur.x = top.x;
+    }
+    blocks.push({ x: cur.x, w: cur.w }); speed = 120 + blocks.length * 7;
+    cur = { x: cur.dir > 0 ? W - cur.w : 0, w: cur.w, dir: -cur.dir };
+    setText($('#mg-info'), blocks.length - 1);
+  };
+  cv.addEventListener('pointerdown', e => { e.preventDefault(); drop(); });
+  $('#mg-drop').addEventListener('pointerdown', e => { e.preventDefault(); drop(); });
+  R.mgActive = { update(dt) {
+    if (over) { wait -= dt; if (wait <= 0) { over = false; wait = 1e9; const h = blocks.length - 1; if (h > S.mg.bestStack) S.mg.bestStack = h; mgFinish('stack', 15 * h + 30 * perfects, '🧱 TOWER BUILT', `${h} can${h === 1 ? '' : 's'} high · ${perfects} perfect`); } return; }
+    cur.x += cur.dir * speed * dt;
+    if (cur.x <= 0) { cur.x = 0; cur.dir = 1; } else if (cur.x + cur.w >= W) { cur.x = W - cur.w; cur.dir = -1; }
+    g.fillStyle = '#05050a'; g.fillRect(0, 0, W, Hh);
+    const cam = Math.max(0, (blocks.length + 1) * BH - (Hh - 120)), draw = (b, i) => {
+      const y = Hh - 20 - (i + 1) * BH + cam; if (y > Hh || y < -BH) return;
+      g.fillStyle = cols[i % cols.length]; g.fillRect(b.x, y, b.w, BH - 2);
+      g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(b.x, y + BH - 8, b.w, 6); g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(b.x + 3, y + 2, b.w - 6, 3);
+    };
+    blocks.forEach((b, i) => draw(b, i)); draw(cur, blocks.length);
+    g.fillStyle = '#222'; g.fillRect(0, Hh - 20 + cam, W, 20);
+  } };
+}
+/* --- 3. Flavour Match: 30s memory game --- */
+function mgMatch() {
+  const fl = CFG.flavours.filter(f => !f.season).sort(() => Math.random() - 0.5).slice(0, 8);
+  const cards = fl.concat(fl).sort(() => Math.random() - 0.5).map(f => ({ f, up: false, ok: false }));
+  let first = -1, lock = false, left = 30, over = false, pairs = 0;
+  const draw = () => {
+    const gr = $('#mg-grid'); if (!gr) return;
+    gr.innerHTML = cards.map((c, i) => `<button class="mcard ${c.up || c.ok ? '' : 'back'} ${c.ok ? 'ok' : ''}" data-act="mg-card" data-i="${i}">${c.up || c.ok ? canSVG(c.f, { noText: true }) : ''}</button>`).join('');
+  };
+  const end = () => {
+    if (over) return; over = true;
+    const clear = pairs === 8;
+    mgFinish('match', pairs * 30 + (clear ? 60 + left * 3 : 0), clear ? '🃏 PERFECT MATCH' : '⏱ TIME UP', `${pairs}/8 pairs${clear ? ' · all cleared!' : ''}`);
+  };
+  modal(`<h2>FLAVOUR MATCH</h2><div class="big" id="mg-time">30</div><div class="mgrid" id="mg-grid"></div><p>Find all 8 pairs before time runs out.</p><button class="btn alt block" data-act="close" style="margin-top:8px">QUIT</button>`, { sticky: true, onClose: () => { over = true; R.mgActive = null; } });
+  draw();
+  ACT['mg-card'] = el => {
+    const i = +el.dataset.i, c = cards[i]; if (over || lock || c.up || c.ok) return;
+    c.up = true; AU.tick();
+    if (first < 0) first = i;
+    else {
+      const a = cards[first];
+      if (a.f === c.f) { a.ok = c.ok = true; a.up = c.up = false; pairs++; AU.chime(); first = -1; if (pairs === 8) { draw(); return end(); } }
+      else { lock = true; first = -1; setTimeout(() => { a.up = c.up = false; lock = false; if (!over) draw(); }, 600); }
+    }
+    draw();
+  };
+  R.mgActive = { update(dt) { if (over) return; left -= dt; setText($('#mg-time'), Math.max(0, Math.ceil(left))); if (left <= 0) end(); } };
+}
+
+/* =====================================================================
+   11. SAVE  -  versioned, autosave 10s + on page hide, base64 export/import
+   ===================================================================== */
+let _noSave = false;
+function save() {
+  if (_noSave) return;
+  try { S.saved = Date.now(); localStorage.setItem(CFG.brand.saveKey, JSON.stringify(S)); } catch (e) {}
+}
+function deepMerge(t, s) {
+  for (const k in s) {
+    if (s[k] && typeof s[k] === 'object' && !Array.isArray(s[k]) && t[k] && typeof t[k] === 'object' && !Array.isArray(t[k])) deepMerge(t[k], s[k]);
+    else t[k] = s[k];
+  }
+  return t;
+}
+/* Turns any older / partial save into the current shape. Add `if (v < N)` steps when the format changes. */
+function migrate(o) {
+  const n = deepMerge(newState(), o);
+  // if ((o.v || 0) < 2) { ...convert v1 -> v2 here... }
+  n.v = SAVE_VERSION;
+  n.b = CFG.buildings.map((_, i) => Math.max(0, Math.floor(+(o.b && o.b[i]) || 0)));
+  Object.keys(n.fl).forEach(id => { if (!FL[id]) delete n.fl[id]; else n.fl[id].lv = clamp(Math.floor(n.fl[id].lv) || 1, 1, 10); });
+  if (!n.fl.original) n.fl.original = { lv: 1 };
+  n.eq = (n.eq || []).filter((id, i, a) => n.fl[id] && a.indexOf(id) === i);
+  if (!n.eq.length) n.eq = [Object.keys(n.fl)[0]];
+  ['cans', 'life', 'run', 'taps'].forEach(k => { if (!isFinite(n[k]) || n[k] < 0) n[k] = 0; });
+  return n;
+}
+function load() {
+  try { const raw = localStorage.getItem(CFG.brand.saveKey); if (raw) S = migrate(JSON.parse(raw)); } catch (e) { S = newState(); }
+}
+const exportCode = () => btoa(unescape(encodeURIComponent(JSON.stringify(S))));
+function importCode(code) {
+  const o = JSON.parse(decodeURIComponent(escape(atob(code.trim()))));
+  if (!o || typeof o !== 'object' || typeof o.cans !== 'number') throw new Error('bad');
+  return migrate(o);
+}
+
+/* =====================================================================
+   12. PWA  -  manifest.json + PNG icons are real files; sw.js caches them for offline use
+   ===================================================================== */
+function setupPWA() {
+  if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+/* =====================================================================
+   13. EVENTS  -  input wiring (one delegated click handler)
+   ===================================================================== */
+function showOffline(gap) {
+  const earned = offlineEarn(gap);
+  if (earned <= 0) return maybeDaily();
+  earn(earned);
+  const capped = gap > D.offCap * 3600;
+  modal(`<h2>WELCOME BACK!</h2><p>You were away for <b class="hl">${fmtTime(gap)}</b>${capped ? ` (capped at ${Math.round(D.offCap)}h)` : ''}. Your factories kept working at ${Math.round(D.offEff * 100)}%.</p>
+<div class="big">+${fmt(earned)}</div><p>${CFG.brand.currency}</p><div class="cb"><button class="btn" data-act="close">COLLECT</button></div>`, { onClose: maybeDaily });
+  AU.chime();
+}
+function maybeDaily() { if (!dailyInfo().claimed && $('#modal').hidden) setTimeout(() => { if ($('#modal').hidden) dailyModal(); }, 250); }
+
+Object.assign(ACT, {
+  tab: el => showTab(el.dataset.v),
+  buy: el => { const n = el.dataset.n === 'max' ? 'max' : +el.dataset.n; if (buyB(+el.dataset.i, n)) { H.sfx('buy'); H.buzz(10); updBld(); } },
+  upg: el => { if (buyUpg(el.dataset.id)) { H.buzz(10); renderUpg(true); updHud(); } },
+  flav: el => flavModal(el.dataset.id),
+  equip: el => { toggleEquip(el.dataset.id); flavModal(el.dataset.id); renderFri(); },
+  'crate-open': el => crateModal(el.dataset.k),
+  'crate-buy': el => { if (buyCrate(el.dataset.k)) { H.toast(`Bought a <b>${CFG.crates[el.dataset.k].name}</b>`); renderFri(); } },
+  close: () => closeModal(),
+  sub: el => { R.sub = el.dataset.v; renderMore(); $('#more-body').scrollTop = 0; },
+  back: () => { R.sub = null; renderMore(); },
+  claimq: el => { claimQuest(+el.dataset.i); renderMore(); },
+  treebr: el => { R.treeBr = el.dataset.v; renderMore(); },
+  tree: el => { buyTree(el.dataset.id); renderMore(); },
+  recycle: () => {
+    const g = tokenGain(); if (g < 1) return;
+    modal(`<h2>${CFG.brand.recycle.toUpperCase()}?</h2><p>You will earn <b class="hl">+${g} ${CFG.brand.tokenShort}</b> (+${g * 2}% permanent production).</p>
+<p>Resets: ${CFG.brand.currency.toLowerCase()}, buildings, upgrades.<br>Keeps: flavours, achievements, crates, ${CFG.brand.tokenShort.toLowerCase()}.</p>
+<div class="cb"><button class="btn red" data-act="recycle-yes">${CFG.brand.recycle.toUpperCase()}</button><button class="btn alt" data-act="close">CANCEL</button></div>`);
+  },
+  'recycle-yes': () => {
+    const g = doRecycle(); closeModal(); if (!g) return;
+    save(); showTab('tap'); applyTheme(); UI.last.upg = ''; UI.dirty = { bld: 1, upg: 1, fri: 1, more: 1 };
+    modal(`<h2>♻️ RECYCLED!</h2><div class="big">+${g}</div><p>${CFG.brand.tokens}. Spend them in the ${CFG.brand.plant} (More tab). Mini-games are now unlocked!</p><div class="cb"><button class="btn" data-act="close">LET'S GO</button></div>`);
+  },
+  'daily-open': () => dailyModal(),
+  'daily-claim': () => { const r = claimDaily(); if (r) { dailyModal(); renderMore(); } },
+  set: el => {
+    const k = el.dataset.k; let v = el.dataset.v;
+    if (v === 'true') v = true; else if (v === 'false') v = false; else if (k === 'parts') v = +v;
+    S.set[k] = v; if (k === 'hallo') applyTheme(); if (k === 'sound' && v) { AU.init(); AU.chime(); } renderMore(); save();
+  },
+  export: () => {
+    modal(`<h2>EXPORT SAVE</h2><p>Copy this code and paste it into IMPORT on your other device.</p><textarea id="exp" readonly>${exportCode()}</textarea>
+<div class="cb"><button class="btn" data-act="copy">COPY</button><button class="btn alt" data-act="close">CLOSE</button></div>`);
+  },
+  copy: async () => {
+    const t = $('#exp'); t.select();
+    try { await navigator.clipboard.writeText(t.value); H.toast('Save code copied!'); } catch (e) { try { document.execCommand('copy'); } catch (e2) {} H.toast('Copied (or long-press to copy)'); }
+  },
+  import: () => {
+    modal(`<h2>IMPORT SAVE</h2><p>Paste a save code. This replaces your current progress.</p><textarea id="imp" placeholder="Paste code here..."></textarea>
+<div class="cb"><button class="btn red" data-act="import-do">IMPORT</button><button class="btn alt" data-act="close">CANCEL</button></div>`);
+  },
+  'import-do': () => {
+    try { const n = importCode($('#imp').value); S = n; save(); _noSave = true; location.reload(); }
+    catch (e) { H.toast('❌ That code is not a valid save'); }
+  },
+  reset: () => modal(`<h2>RESET GAME?</h2><p>This permanently deletes ALL progress, flavours and tokens. Export first if unsure!</p>
+<div class="cb"><button class="btn red" data-act="reset-yes">DELETE EVERYTHING</button><button class="btn alt" data-act="close">CANCEL</button></div>`),
+  'reset-yes': () => { _noSave = true; try { localStorage.removeItem(CFG.brand.saveKey); } catch (e) {} location.reload(); },
+  mg: el => { closeModal(); startMG(el.dataset.k); }
+});
+
+function bindEvents() {
+  const can = $('#can');
+  can.addEventListener('pointerdown', handleTap);
+  document.addEventListener('click', e => {
+    AU.init();
+    const t = e.target.closest('[data-act],[data-tab]');
+    if (!t) { if (e.target.id === 'modal' && !$('#modal').dataset.sticky) closeModal(); return; }
+    if (t.dataset.tab) return showTab(t.dataset.tab);
+    const a = ACT[t.dataset.act]; if (a) a(t, e);
+  });
+  ['gesturestart', 'gesturechange', 'dblclick'].forEach(ev => document.addEventListener(ev, e => e.preventDefault()));
+  document.addEventListener('contextmenu', e => { if (!e.target.closest('textarea')) e.preventDefault(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { save(); R.hiddenAt = Date.now(); }
+    else if (R.hiddenAt) {
+      const gap = (Date.now() - R.hiddenAt) / 1000; R.hiddenAt = 0;
+      if (gap > 30) { for (const k in S.buffs) S.buffs[k] = Math.max(0, S.buffs[k] - gap); recalc(); showOffline(gap); }
+    }
+  });
+  addEventListener('pagehide', save);
+}
+
+/* =====================================================================
+   14. BOOT / GAME LOOP  -  requestAnimationFrame with delta time
+   ===================================================================== */
+function updDots() {
+  $('#dot-upg').classList.toggle('on', UPGS.some(u => upgVisible(u) && S.cans >= u.cost));
+  $('#dot-fri').classList.toggle('on', (S.crates.common + S.crates.rare + S.crates.epic) > 0);
+  $('#dot-more').classList.toggle('on', !dailyInfo().claimed || S.q.list.some(q => q.done && !q.claimed) || canRecycle());
+}
+let _last = 0, _a1 = 0, _a2 = 0, _a3 = 0, _sv = 0;
+function frame(ts) {
+  const dt = Math.min(0.25, Math.max(0, (ts - _last) / 1000)); _last = ts;
+  tick(dt);
+  if (R.mgActive) R.mgActive.update(dt);
+  FX.draw(dt); uiGold(dt);
+  _a1 += dt; _a2 += dt; _a3 += dt; _sv += dt;
+  if (_a1 >= 0.1) { _a1 = 0; updHud(); if (R.tab === 'tap') updMeter(); }
+  if (_a3 >= 0.45 && R.tab === 'tap' && FX.lvl() > 0) {          // ambient fizz from the can
+    _a3 = 0; const r = $('#can').getBoundingClientRect(), a = $('#app').getBoundingClientRect();
+    FX.bubble(r.left - a.left + r.width / 2, r.top - a.top + r.height * 0.9, r.width * 0.3);
+  }
+  if (_a2 >= 0.25) {
+    _a2 = 0; updBanners(); updDots();
+    const free = $('#modal').hidden;
+    if (R.tab === 'bld') updBld();
+    else if (R.tab === 'upg') renderUpg();
+    else if (R.tab === 'fri') {
+      const sig = (S.cans >= crateBuyCost('common') ? 1 : 0) + '' + (S.cans >= crateBuyCost('rare') ? 1 : 0);
+      if (UI.last.fri !== sig) { UI.last.fri = sig; UI.dirty.fri = 1; }
+      if (UI.dirty.fri && free) { const e = $('#fri-body'), st = e.scrollTop; renderFri(); UI.dirty.fri = 0; e.scrollTop = st; }
+    } else if (R.tab === 'more') {
+      const live = ['quests', 'mg', 'recycle', 'stats'].includes(R.sub), now = Math.floor(performance.now() / 1000);
+      if ((UI.dirty.more || (live && UI.last.more !== now)) && free) { UI.last.more = now; UI.dirty.more = 0; renderMore(); }
+    }
+  }
+  if (_sv >= 10) { _sv = 0; save(); }
+  requestAnimationFrame(frame);
+}
+function boot() {
+  document.title = CFG.brand.name;
+  document.querySelectorAll('[data-b]').forEach(el => {
+    const k = el.dataset.b; el.textContent = k === 'currency' ? CFG.brand.currency.toUpperCase() : k.startsWith('tab_') ? CFG.brand.tabs[k.slice(4)] : (CFG.brand[k] || el.textContent);
+  });
+  load(); recalc();
+  if (S.q.day !== dayKey()) genQuests();
+  FX.init(); applyTheme(); bindEvents(); setupPWA();
+  if (S.ev.limId && Date.now() > S.ev.limEnd) endLimited(false);
+  const gap = (Date.now() - S.saved) / 1000;
+  if (S.life > 0 && gap > 60) { for (const k in S.buffs) S.buffs[k] = Math.max(0, S.buffs[k] - gap); recalc(); showOffline(gap); } else maybeDaily();
+  checkMilestones(); updHud(); updMeter(); updBanners(); updDots();
+  R.ready = true; requestAnimationFrame(t => { _last = t; requestAnimationFrame(frame); });
+}
+if (typeof window !== 'undefined' && !window.__NOBOOT) boot();
+</script>
+</body>
+</html>
