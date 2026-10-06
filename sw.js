@@ -1,6 +1,6 @@
 /* CAN CLICKER service worker: offline cache (stale-while-revalidate).
    Bump CACHE when you want every device to drop its old cached copy. */
-const CACHE = 'canclicker-v2';
+const CACHE = 'canclicker-v3';
 const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

@@ -77,9 +77,11 @@ body.crash #bg{filter:grayscale(1) brightness(.6)}
 .eqchip b{display:block;font:400 14px var(--disp);letter-spacing:1px}
 .eqchip span{color:var(--dim);display:block;line-height:1.15}
 #can-wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
-#can{width:min(68vw,330px);height:min(46vh,calc(min(68vw,330px)*1.6));touch-action:none;cursor:pointer;filter:drop-shadow(0 0 28px rgba(var(--acc-rgb),.45));will-change:transform}
+#can{width:min(68vw,330px);height:min(46vh,calc(min(68vw,330px)*1.6));touch-action:none;cursor:pointer;will-change:transform;position:relative;z-index:1}
+#can-wrap::before{content:"";position:absolute;left:50%;top:50%;width:min(92vw,430px);height:min(92vw,430px);transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(var(--acc-rgb),.34),rgba(var(--acc-rgb),.08) 46%,transparent 68%)}
+body.over #can-wrap::before{animation:ov .45s infinite alternate}
+@keyframes ov{from{opacity:.55}to{opacity:1;transform:translate(-50%,-50%) scale(1.12)}}
 #can svg{width:100%;height:100%;display:block;pointer-events:none}
-body.over #can{filter:drop-shadow(0 0 45px var(--acc)) saturate(1.5)}
 .meter{padding:6px 18px 10px;position:relative;z-index:2}
 .mrow{display:flex;justify-content:space-between;font:400 16px var(--disp);letter-spacing:1.5px;margin-bottom:4px}
 #combo-t{color:var(--acc)}
@@ -96,9 +98,8 @@ body.over #can{filter:drop-shadow(0 0 45px var(--acc)) saturate(1.5)}
 .bar.thin::after{display:none}
 .bar.prog>i{background:var(--acc);transition:width .3s}
 #gold{position:absolute;inset:0;pointer-events:none;z-index:6;overflow:hidden}
-.gcan{position:absolute;left:0;top:0;width:68px;height:96px;margin:-48px 0 0 -34px;pointer-events:auto;touch-action:manipulation;filter:drop-shadow(0 0 14px #ffd400);cursor:pointer}
+.gcan{position:absolute;left:0;top:0;width:68px;height:96px;margin:-48px 0 0 -34px;pointer-events:auto;touch-action:manipulation;cursor:pointer}
 .gcan svg{width:100%;height:100%;display:block;pointer-events:none}
-.gcan.ltd{filter:drop-shadow(0 0 14px #ff3d7f)}
 #fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
 
 /* ============================== CARDS / BUTTONS ============================== */
@@ -183,7 +184,7 @@ textarea{width:100%;min-height:110px;background:#000;color:var(--txt);border:1px
 .mbox .big{font:400 44px var(--disp);color:#fff;letter-spacing:1px}
 .mbox .cb{display:flex;gap:8px;margin-top:14px}
 .mbox .cb .btn{flex:1}
-.mbox svg.big-can{height:200px;width:auto;margin:6px auto;display:block;filter:drop-shadow(0 0 18px rgba(var(--acc-rgb),.5))}
+.mbox svg.big-can{height:200px;width:auto;margin:6px auto;display:block}
 .days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:12px 0}
 .day{border:1px solid var(--line);border-radius:10px;padding:6px 0;font-size:10px;color:var(--dim);background:var(--panel2)}
 .day b{display:block;font-size:18px;font-weight:400}
@@ -198,6 +199,18 @@ textarea{width:100%;min-height:110px;background:#000;color:var(--txt);border:1px
 .toast b{color:var(--acc)}
 @keyframes tin{from{transform:translateY(-20px);opacity:0}to{transform:none;opacity:1}}
 @keyframes tout{to{opacity:0;transform:translateY(-10px)}}
+
+/* ============================== CAN ART EFFECTS (CSS-only, transform/opacity so they stay cheap on phones) ============================== */
+.shim{animation:shim 2.8s ease-in-out infinite}
+@keyframes shim{0%{transform:translateX(-50px)}55%,100%{transform:translateX(230px)}}
+.holo{animation:holo 4.5s linear infinite}
+@keyframes holo{from{transform:translateX(0)}to{transform:translateX(-133.33px)}}
+.gl{animation:glp 1.8s ease-in-out infinite alternate}
+@keyframes glp{from{opacity:.3}to{opacity:1}}
+.spin3d{perspective:800px;display:flex;justify-content:center}
+.spin3d>svg{animation:spin3d 1.5s cubic-bezier(.15,.85,.25,1) both}
+@keyframes spin3d{0%{transform:rotateY(-900deg) scale(.15);opacity:0}25%{opacity:1}100%{transform:rotateY(0) scale(1)}}
+@media (prefers-reduced-motion:reduce){.shim,.holo,.gl,.spin3d>svg{animation:none}}
 
 /* ============================== MINI-GAMES ============================== */
 .mg{background:#000;border-radius:14px;border:1px solid var(--line);display:block;margin:8px auto;touch-action:none}
@@ -299,36 +312,40 @@ const CFG = {
     dropRate:   { u: '%', t: 'tap drop rate' },
     crashRed:   { u: '%', t: 'weaker Sugar Crash' }
   },
-  /* c = neon colour, ms = unlock at lifetime cans (milestone), season = only during that event */
+  /* Flavour fields:  c = main accent / neon colour (also drives the UI theme)   base = can body colour
+     c2 = secondary accent   fin = finish: matte | gloss | metal | holo   pat = printed pattern (see PAT in the can-art section)
+     perk = [type, value at Lv1]   ms = unlock at lifetime cans   season = only during that event.
+     Rarity adds its own effect on top: Common plain, Rare metallic sheen, Epic animated shimmer, Legendary holographic sweep,
+     Limited glowing outline + a special pattern. */
   flavours: [
-    { id: 'original',   name: 'Original Green',          r: 'common',    c: '#7cff00', perk: ['tapMult', 0.10], ms: 0 },
-    { id: 'locarb',     name: 'Lo-Carb',                 r: 'common',    c: '#19e6c1', perk: ['costRed', 0.03], ms: 3e3 },
-    { id: 'paradise',   name: 'Ultra Paradise',          r: 'common',    c: '#4fe3d2', perk: ['offlineEff', 0.10], ms: 8e4 },
-    { id: 'rosa',       name: 'Ultra Rosa',              r: 'common',    c: '#ff7eb6', perk: ['goldenFreq', 0.15], ms: 1e6 },
-    { id: 'fiesta',     name: 'Ultra Fiesta',            r: 'common',    c: '#ffb347', perk: ['critDmg', 0.5] },
-    { id: 'violet',     name: 'Ultra Violet',            r: 'common',    c: '#a45bff', perk: ['caffGain', 0.15] },
-    { id: 'peachy',     name: 'Ultra Peachy Keen',       r: 'common',    c: '#ff9a76', perk: ['crateLuck', 0.15] },
-    { id: 'strawberry', name: 'Ultra Strawberry Dreams', r: 'common',    c: '#ff4d6d', perk: ['cpsTap', 0.01] },
-    { id: 'white',      name: 'Ultra White',             r: 'rare',      c: '#e8f1ff', perk: ['critChance', 0.10], ms: 2e7 },
-    { id: 'watermelon', name: 'Ultra Watermelon',        r: 'rare',      c: '#ff5f7e', perk: ['globalMult', 0.06] },
-    { id: 'mango',      name: 'Mango Loco',              r: 'rare',      c: '#ff9500', perk: ['buildMult', 0.15], ms: 3e8 },
-    { id: 'pacific',    name: 'Pacific Punch',           r: 'rare',      c: '#ff6ec7', perk: ['goldenDur', 0.20] },
-    { id: 'rehab',      name: 'Rehab Lemonade',          r: 'rare',      c: '#ffe14d', perk: ['offlineCap', 2] },
-    { id: 'java',       name: 'Java',                    r: 'rare',      c: '#c98b5a', perk: ['caffDrain', 0.30] },
-    { id: 'gold',       name: 'Ultra Gold',              r: 'epic',      c: '#ffc933', perk: ['globalMult', 0.10], ms: 5e10 },
-    { id: 'pipeline',   name: 'Pipeline Punch',          r: 'epic',      c: '#ff5ea0', perk: ['comboLen', 0.7] },
-    { id: 'nitro',      name: 'Nitro',                   r: 'epic',      c: '#59c2ff', perk: ['overDur', 3] },
-    { id: 'monarch',    name: 'Monarch',                 r: 'epic',      c: '#d4a5ff', perk: ['dropRate', 0.5] },
-    { id: 'black',      name: 'Ultra Black',             r: 'legendary', c: '#9aa0b4', perk: ['globalMult', 0.20], ms: 1e13 },
-    { id: 'respine',    name: 'Reserve White Pineapple', r: 'legendary', c: '#f4f7c2', perk: ['tapMult', 0.50] },
-    { id: 'reswater',   name: 'Reserve Watermelon',      r: 'legendary', c: '#ff7a93', perk: ['buildMult', 0.40] },
-    { id: 'khaotic',    name: 'Khaotic',                 r: 'limited',   c: '#ff8a1f', perk: ['critDmg', 1.0] },
-    { id: 'aussie',     name: 'Aussie Lemonade',         r: 'limited',   c: '#f4ff4a', perk: ['costRed', 0.05] },
-    { id: 'rio',        name: 'Rio Punch',               r: 'limited',   c: '#ff4fa3', perk: ['crashRed', 0.5] },
-    { id: 'badapple',   name: 'Bad Apple',               r: 'limited',   c: '#9bff3d', perk: ['crateLuck', 0.30] },
-    { id: 'viking',     name: 'Viking Berry',            r: 'limited',   c: '#6a5cff', perk: ['caffGain', 0.35] },
-    { id: 'ghoul',      name: 'Ghoul Punch',             r: 'limited',   c: '#9d4dff', perk: ['critChance', 0.08], season: 'hallo' },
-    { id: 'pumpkin',    name: 'Pumpkin Rush',            r: 'limited',   c: '#ff7a00', perk: ['buildMult', 0.20], season: 'hallo' }
+    { id: 'original',   name: 'Original Green',          r: 'common',    c: '#7cff00', c2: '#d6ff6a', base: '#10240a', fin: 'gloss', pat: 'bolts',    perk: ['tapMult', 0.10], ms: 0 },
+    { id: 'locarb',     name: 'Lo-Carb',                 r: 'common',    c: '#19e6c1', c2: '#a8fff0', base: '#06242a', fin: 'matte', pat: 'waves',    perk: ['costRed', 0.03], ms: 3e3 },
+    { id: 'paradise',   name: 'Ultra Paradise',          r: 'common',    c: '#4fe3d2', c2: '#ffe27a', base: '#07303a', fin: 'gloss', pat: 'leaves',   perk: ['offlineEff', 0.10], ms: 8e4 },
+    { id: 'rosa',       name: 'Ultra Rosa',              r: 'common',    c: '#ff7eb6', c2: '#ffd1e6', base: '#3a1020', fin: 'matte', pat: 'stars',    perk: ['goldenFreq', 0.15], ms: 1e6 },
+    { id: 'fiesta',     name: 'Ultra Fiesta',            r: 'common',    c: '#ffb347', c2: '#ff5e5e', base: '#3a2108', fin: 'gloss', pat: 'chevrons', perk: ['critDmg', 0.5] },
+    { id: 'violet',     name: 'Ultra Violet',            r: 'common',    c: '#a45bff', c2: '#ff7ee0', base: '#1e0f3a', fin: 'matte', pat: 'fade',     perk: ['caffGain', 0.15] },
+    { id: 'peachy',     name: 'Ultra Peachy Keen',       r: 'common',    c: '#ff9a76', c2: '#ffe0a8', base: '#3a1a10', fin: 'gloss', pat: 'rings',    perk: ['crateLuck', 0.15] },
+    { id: 'strawberry', name: 'Ultra Strawberry Dreams', r: 'common',    c: '#ff4d6d', c2: '#ffc2d0', base: '#3a0a14', fin: 'matte', pat: 'splatter', perk: ['cpsTap', 0.01] },
+    { id: 'white',      name: 'Ultra White',             r: 'rare',      c: '#e8f1ff', c2: '#8ec5ff', base: '#2a2f3a', fin: 'metal', pat: 'shards',   perk: ['critChance', 0.10], ms: 2e7 },
+    { id: 'watermelon', name: 'Ultra Watermelon',        r: 'rare',      c: '#ff5f7e', c2: '#7dff9b', base: '#0f2a18', fin: 'metal', pat: 'splatter', perk: ['globalMult', 0.06] },
+    { id: 'mango',      name: 'Mango Loco',              r: 'rare',      c: '#ff9500', c2: '#ffd166', base: '#3a2200', fin: 'metal', pat: 'leaves',   perk: ['buildMult', 0.15], ms: 3e8 },
+    { id: 'pacific',    name: 'Pacific Punch',           r: 'rare',      c: '#ff6ec7', c2: '#6ee7ff', base: '#3a0f2e', fin: 'metal', pat: 'waves',    perk: ['goldenDur', 0.20] },
+    { id: 'rehab',      name: 'Rehab Lemonade',          r: 'rare',      c: '#ffe14d', c2: '#fff8b0', base: '#2f2b05', fin: 'metal', pat: 'chevrons', perk: ['offlineCap', 2] },
+    { id: 'java',       name: 'Java',                    r: 'rare',      c: '#c98b5a', c2: '#f3d2a8', base: '#2a1a0e', fin: 'metal', pat: 'rings',    perk: ['caffDrain', 0.30] },
+    { id: 'gold',       name: 'Ultra Gold',              r: 'epic',      c: '#ffc933', c2: '#fff0a0', base: '#33270a', fin: 'metal', pat: 'stars',    perk: ['globalMult', 0.10], ms: 5e10 },
+    { id: 'pipeline',   name: 'Pipeline Punch',          r: 'epic',      c: '#ff5ea0', c2: '#59e0ff', base: '#06304a', fin: 'gloss', pat: 'waves',    perk: ['comboLen', 0.7] },
+    { id: 'nitro',      name: 'Nitro',                   r: 'epic',      c: '#59c2ff', c2: '#b8f0ff', base: '#04162e', fin: 'metal', pat: 'bolts',    perk: ['overDur', 3] },
+    { id: 'monarch',    name: 'Monarch',                 r: 'epic',      c: '#d4a5ff', c2: '#ffd27a', base: '#240f3a', fin: 'gloss', pat: 'shards',   perk: ['dropRate', 0.5] },
+    { id: 'black',      name: 'Ultra Black',             r: 'legendary', c: '#9aa0b4', c2: '#e6e9ff', base: '#0a0a0e', fin: 'holo',  pat: 'shards',   perk: ['globalMult', 0.20], ms: 1e13 },
+    { id: 'respine',    name: 'Reserve White Pineapple', r: 'legendary', c: '#f4f7c2', c2: '#ffd84d', base: '#2c2c10', fin: 'holo',  pat: 'leaves',   perk: ['tapMult', 0.50] },
+    { id: 'reswater',   name: 'Reserve Watermelon',      r: 'legendary', c: '#ff7a93', c2: '#8dffb0', base: '#10281a', fin: 'holo',  pat: 'splatter', perk: ['buildMult', 0.40] },
+    { id: 'khaotic',    name: 'Khaotic',                 r: 'limited',   c: '#ff8a1f', c2: '#ffe14d', base: '#2a1204', fin: 'metal', pat: 'flames',   perk: ['critDmg', 1.0] },
+    { id: 'aussie',     name: 'Aussie Lemonade',         r: 'limited',   c: '#f4ff4a', c2: '#ffffff', base: '#2e3004', fin: 'gloss', pat: 'rays',     perk: ['costRed', 0.05] },
+    { id: 'rio',        name: 'Rio Punch',               r: 'limited',   c: '#ff4fa3', c2: '#4dffd0', base: '#3a0a26', fin: 'metal', pat: 'prism',    perk: ['crashRed', 0.5] },
+    { id: 'badapple',   name: 'Bad Apple',               r: 'limited',   c: '#9bff3d', c2: '#ff4d4d', base: '#0f3004', fin: 'gloss', pat: 'runes',    perk: ['crateLuck', 0.30] },
+    { id: 'viking',     name: 'Viking Berry',            r: 'limited',   c: '#6a5cff', c2: '#a6f0ff', base: '#0e0e3a', fin: 'metal', pat: 'nebula',   perk: ['caffGain', 0.35] },
+    { id: 'ghoul',      name: 'Ghoul Punch',             r: 'limited',   c: '#9d4dff', c2: '#c8ff4d', base: '#1a0a2e', fin: 'matte', pat: 'webs',     perk: ['critChance', 0.08], season: 'hallo' },
+    { id: 'pumpkin',    name: 'Pumpkin Rush',            r: 'limited',   c: '#ff7a00', c2: '#ffd24d', base: '#2e1202', fin: 'gloss', pat: 'pumpkins', perk: ['buildMult', 0.20], season: 'hallo' }
   ],
   /* cost = base cost, cps = base cans/sec each. Cost scales ×1.15 per owned. */
   buildings: [
@@ -580,7 +597,7 @@ function tapMods() {
    ===================================================================== */
 /* H = hooks the UI layer overrides. Defaults are no-ops so the engine runs headless. */
 const H = {
-  toast() {}, sfx() {}, buzz() {}, mode() {}, themeChanged() {}, dirty() {}
+  toast() {}, sfx() {}, buzz() {}, mode() {}, themeChanged() {}, dirty() {}, unlocked() {}
 };
 R.clock = 0;
 
@@ -671,7 +688,7 @@ function giveFlavour(id, quiet) {
   else { res.refund = Math.max(1000, cpsBase() * 300); earn(res.refund); }
   res.lv = S.fl[id].lv;
   markDirty('fri'); H.themeChanged();
-  if (!quiet) H.toast(res.isNew ? `🆕 New flavour: <b>${f.name}</b>` : `⬆ <b>${f.name}</b> Lv ${res.lv}`);
+  if (!quiet) { H.toast(res.isNew ? `🆕 New flavour: <b>${f.name}</b>` : `⬆ <b>${f.name}</b> Lv ${res.lv}`); if (res.isNew) H.unlocked(id); }
   return res;
 }
 function openCrate(kind) {
@@ -723,7 +740,7 @@ function doTap() {
   if (Math.random() < 0.0005 * D.drop) addCrate(Math.random() < 0.12 ? 'rare' : 'common', 1);
   if (Math.random() < 0.00006 * D.drop) {
     const id = rollFlavour('common'), r = giveFlavour(id, true);
-    H.toast(`✨ Drop! <b>${FL[id].name}</b>${r.isNew ? ' (NEW)' : ' Lv ' + r.lv}`); H.sfx('fanfare');
+    H.toast(`✨ Drop! <b>${FL[id].name}</b>${r.isNew ? ' (NEW)' : ' Lv ' + r.lv}`); H.sfx('fanfare'); if (r.isNew) H.unlocked(id);
   }
   return { v, crit };
 }
@@ -934,6 +951,133 @@ function tick(dt) {
 }
 
 /* =====================================================================
+   8. CAN ART  -  a fully original, code-generated design system.
+   Every can = aluminium body + pull-tab lid + rim ridges + cylindrical shading
+   + flavour pattern + our own wordmark + condensed flavour name.
+   Per-flavour CFG fields: base, c (accent), c2, fin (matte|gloss|metal|holo), pat.
+   Rarity layers: Common plain · Rare metallic sheen · Epic animated shimmer ·
+   Legendary holographic sweep · Limited special pattern + glowing outline.
+   Nothing here copies a real brand's logo, claw mark or can layout.
+   ===================================================================== */
+let _cid = 0;
+function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function rng(seed) {                      // small seeded PRNG so each flavour always draws the same pattern
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const f1 = n => Math.round(n * 10) / 10;
+const starPath = (cx, cy, R, r) => { let d = ''; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? r : R; d += (i ? 'L' : 'M') + f1(cx + Math.cos(a) * q) + ' ' + f1(cy + Math.sin(a) * q); } return d + 'Z'; };
+const BAT = 'M0 0 C-3 -6 -11 -9 -19 -4 C-14 -3 -13 1 -10 3 C-8 1 -5 1 -3 4 L0 1.5 L3 4 C5 1 8 1 10 3 C13 1 14 -3 19 -4 C11 -9 3 -6 0 0Z';
+const BODY = 'M58 54 L142 54 Q155 60 158 88 L158 278 Q158 292 148 297 L142 301 L58 301 L52 297 Q42 292 42 278 L42 88 Q45 60 58 54 Z';
+
+/* ---- patterns: (accent, accent2, rng, uid) -> svg drawn inside the printed area x 42..158, y 90..282 ---- */
+const PAT = {
+  bolts: (c, d) => `<path d="M122 88 L82 178 L108 178 L72 282 L152 162 L122 162 L150 88Z" fill="${c}" opacity=".92"/><path d="M68 96 L50 150 L65 150 L48 214 L92 142 L76 142 L90 96Z" fill="${d}" opacity=".75"/><path d="M104 214 L96 238 L108 238 L100 262 L120 234 L110 234 L118 214Z" fill="${d}" opacity=".6"/>`,
+  waves: (c, d) => { let o = ''; for (let i = 0; i < 6; i++) { const y = 126 + i * 28; o += `<path d="M30 ${y} q17 -15 34 0 t34 0 t34 0 t34 0 V300 H30Z" fill="${i % 2 ? d : c}" opacity="${f1(.9 - i * .08)}"/>`; } return o; },
+  leaves: (c, d) => { let o = ''; [[58, 238, -62, 1.1], [142, 246, -118, 1.1], [100, 188, -90, 1.25], [52, 150, -28, .9], [148, 142, -152, .9], [100, 262, -90, 1], [66, 112, 24, .7], [136, 108, 156, .7]].forEach((l, i) => { o += `<g transform="translate(${l[0]} ${l[1]}) rotate(${l[2]}) scale(${l[3]})"><path d="M0 0 C14 -15 40 -17 56 0 C40 17 14 15 0 0Z" fill="${i % 2 ? d : c}"/><path d="M2 0 L50 0" stroke="#000" stroke-opacity=".4" stroke-width="1.4"/></g>`; }); return o; },
+  flames: (c, d) => { let o = ''; [[54, 1.0], [86, 1.35], [118, 1.2], [148, .95]].forEach(f => { o += `<g transform="translate(${f[0]} 284) scale(${f[1]})"><path d="M0 0 C-16 -18 -10 -40 -2 -72 C5 -50 26 -40 17 -14 C15 -4 6 2 0 0Z" fill="${c}"/><path d="M0 -2 C-8 -12 -4 -28 0 -44 C4 -30 13 -24 9 -10 C7 -4 3 -1 0 -2Z" fill="${d}"/></g>`; }); return o + `<path d="M42 200 Q70 160 100 190 T158 150 V282 H42Z" fill="${c}" opacity=".35"/>`; },
+  stars: (c, d, r) => { let o = ''; for (let i = 0; i < 9; i++) { const R = 6 + r() * 9; o += `<path d="${starPath(f1(56 + r() * 88), f1(104 + r() * 164), f1(R), f1(R * .45))}" fill="${i % 2 ? d : c}" opacity="${f1(.7 + r() * .3)}"/>`; } return o; },
+  shards: (c, d) => `<polygon points="42,90 112,84 72,172" fill="${c}" opacity=".85"/><polygon points="112,84 158,98 158,176 124,150" fill="${d}" opacity=".75"/><polygon points="42,172 84,194 62,282 42,282" fill="${d}" opacity=".6"/><polygon points="84,194 158,176 158,282 102,282" fill="${c}" opacity=".5"/><polygon points="62,282 104,212 104,282" fill="${d}" opacity=".85"/><polygon points="72,172 124,150 84,194" fill="#fff" opacity=".18"/><path d="M42 90 L112 84 L72 172 L42 172 M124 150 L84 194 L62 282" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1"/>`,
+  splatter: (c, d, r) => { let o = ''; for (let i = 0; i < 20; i++) o += `<circle cx="${f1(46 + r() * 108)}" cy="${f1(96 + r() * 180)}" r="${f1(1.5 + r() * r() * 9)}" fill="${i % 3 ? c : d}" opacity="${f1(.65 + r() * .35)}"/>`; return o + `<ellipse cx="62" cy="256" rx="22" ry="14" fill="${c}" opacity=".85"/><ellipse cx="140" cy="120" rx="16" ry="11" fill="${d}" opacity=".8"/><ellipse cx="132" cy="262" rx="12" ry="8" fill="${d}" opacity=".7"/>`; },
+  fade: (c, d, r, id) => { let o = `<defs><linearGradient id="${id}fd" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${c}"/><stop offset=".55" stop-color="${d}" stop-opacity=".55"/><stop offset="1" stop-color="${d}" stop-opacity="0"/></linearGradient></defs><rect x="40" y="88" width="120" height="196" fill="url(#${id}fd)"/>`; for (let i = 0; i < 6; i++) o += `<path d="M${40 + i * 24} 282 L${86 + i * 24} 88" stroke="#fff" stroke-opacity=".16" stroke-width="3"/>`; return o; },
+  chevrons: (c, d) => { let o = ''; for (let i = 0; i < 6; i++) o += `<path d="M30 ${98 + i * 34} L100 ${130 + i * 34} L170 ${98 + i * 34}" fill="none" stroke="${i % 2 ? d : c}" stroke-width="12" opacity="${f1(.95 - i * .08)}"/>`; return o; },
+  rings: (c, d) => { let o = ''; for (let i = 0; i < 6; i++) o += `<circle cx="100" cy="206" r="${16 + i * 22}" fill="none" stroke="${i % 2 ? d : c}" stroke-width="${i % 2 ? 4 : 8}" opacity=".85"/>`; return o + `<circle cx="100" cy="206" r="9" fill="${d}"/>`; },
+  rays: (c, d) => { let o = ''; for (let i = 0; i < 16; i++) { const a1 = i * Math.PI / 8, a2 = a1 + Math.PI / 16; o += `<path d="M100 200 L${f1(100 + Math.cos(a1) * 190)} ${f1(200 + Math.sin(a1) * 190)} L${f1(100 + Math.cos(a2) * 190)} ${f1(200 + Math.sin(a2) * 190)}Z" fill="${i % 2 ? d : c}" opacity="${i % 2 ? .3 : .8}"/>`; } return o; },
+  prism: (c, d) => { let o = ''; for (let row = 0; row < 7; row++) for (let col = 0; col < 4; col++) { const x = 44 + col * 34 + (row % 2) * 17, y = 104 + row * 28; o += `<path d="M${x} ${y - 16} L${x + 17} ${y} L${x} ${y + 16} L${x - 17} ${y}Z" fill="${(row + col) % 3 ? c : d}" opacity="${f1(.35 + ((row * 3 + col * 5) % 6) * .1)}" stroke="#fff" stroke-opacity=".3" stroke-width=".8"/>`; } return o; },
+  runes: (c, d, r) => { const G = ['M0 -9 V9 M0 -3 L7 -9 M0 3 L7 9', 'M-6 -9 L6 9 M6 -9 L-6 9 M0 -9 V9', 'M-6 9 L0 -9 L6 9 M-4 3 H4', 'M-5 -9 H5 L-5 9 H5']; let o = `<g fill="none" stroke-linecap="round" stroke-width="3">`; for (let row = 0; row < 6; row++) for (let col = 0; col < 3; col++) o += `<path transform="translate(${56 + col * 44} ${108 + row * 30})" d="${G[(r() * 4) | 0]}" stroke="${(row + col) % 2 ? d : c}" opacity=".85"/>`; return o + `</g><path d="M42 94 H158 M42 276 H158" stroke="${c}" stroke-width="3" opacity=".7"/>`; },
+  nebula: (c, d, r, id) => { let o = `<defs><radialGradient id="${id}nb"><stop offset="0" stop-color="${d}" stop-opacity=".9"/><stop offset=".5" stop-color="${c}" stop-opacity=".5"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient></defs><circle cx="70" cy="150" r="70" fill="url(#${id}nb)"/><circle cx="136" cy="230" r="76" fill="url(#${id}nb)"/><circle cx="104" cy="100" r="40" fill="url(#${id}nb)" opacity=".7"/>`; for (let i = 0; i < 16; i++) o += `<circle cx="${f1(44 + r() * 112)}" cy="${f1(94 + r() * 184)}" r="${f1(.6 + r() * 1.6)}" fill="#fff" opacity="${f1(.5 + r() * .5)}"/>`; return o; },
+  /* ---- Halloween ---- */
+  webs: (c, d) => { let o = `<defs></defs><circle cx="100" cy="226" r="46" fill="${d}" opacity=".22"/><g fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.1">`; [[42, 90, 1], [158, 90, -1]].forEach(([x, y, s]) => { for (let i = 0; i < 7; i++) { const a = i * Math.PI / 12; o += `<path d="M${x} ${y} L${f1(x + s * Math.cos(a) * 130)} ${f1(y + Math.sin(a) * 130)}"/>`; } for (let k = 1; k < 5; k++) { let p = ''; for (let i = 0; i < 7; i++) { const a = i * Math.PI / 12, rr = k * 26 - (i % 2 ? 4 : 0); p += (i ? 'L' : 'M') + f1(x + s * Math.cos(a) * rr) + ' ' + f1(y + Math.sin(a) * rr); } o += `<path d="${p}"/>`; } }); o += `</g><path d="M100 90 V150" stroke="#fff" stroke-opacity=".5"/><ellipse cx="100" cy="156" rx="6" ry="7" fill="#0a0510" stroke="${d}" stroke-width="1"/>`; [[62, 260, 1.1], [136, 250, .9], [100, 276, .7]].forEach(b => o += `<path transform="translate(${b[0]} ${b[1]}) scale(${b[2]})" d="${BAT}" fill="#07030c" stroke="${d}" stroke-width="1"/>`); return o; },
+  pumpkins: (c, d, r, id) => { let o = `<defs><radialGradient id="${id}pg"><stop offset="0" stop-color="${d}" stop-opacity=".95"/><stop offset=".6" stop-color="${c}" stop-opacity=".35"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient></defs><circle cx="100" cy="246" r="62" fill="url(#${id}pg)"/>`;
+    o += `<g transform="translate(100 248)"><ellipse cx="-17" rx="19" ry="25" fill="${c}"/><ellipse cx="17" rx="19" ry="25" fill="${c}"/><ellipse rx="19" ry="27" fill="#ff9d33"/><path d="M-10 -24 V24 M10 -24 V24" stroke="#7a2e00" stroke-width="1.5" opacity=".6" fill="none"/><path d="M-3 -27 L0 -36 L5 -27Z" fill="#3b7a1a"/><path d="M-12 -8 L-5 -8 L-8.5 -15Z M5 -8 L12 -8 L8.5 -15Z" fill="${d}"/><path d="M-12 6 L-7 11 L-3 6 L0 11 L3 6 L7 11 L12 6 L8 16 L-8 16Z" fill="${d}"/></g>`;
+    [[56, 112, 1.3], [142, 120, 1.1], [100, 98, .8], [48, 168, .8], [150, 176, .9]].forEach(b => o += `<path transform="translate(${b[0]} ${b[1]}) scale(${b[2]})" d="${BAT}" fill="#07030c" stroke="${c}" stroke-width="1"/>`); return o; }
+};
+
+/* wrap the flavour name into <= 4 short lines for the condensed label */
+function wrapName(n) {
+  if (n.length <= 9) return [n];
+  const lines = []; let cur = '';
+  n.split(' ').forEach(w => { if (cur && (cur + ' ' + w).length > 10) { lines.push(cur); cur = w; } else cur = (cur ? cur + ' ' : '') + w; });
+  if (cur) lines.push(cur); return lines.slice(0, 4);
+}
+const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* canSVG(flavour, {sil, noText, cls, anim})
+   anim = animate the rarity effect (use for ONE big can at a time; grids stay static for phone performance). */
+function canSVG(f, o = {}) {
+  const uid = 'k' + (_cid++), cls = o.cls ? ` class="${o.cls}"` : '';
+  if (o.sil) return `<svg viewBox="0 0 200 330"${cls}><path d="${BODY}" fill="#0c0c10" stroke="#2a2a33" stroke-width="3"/><ellipse cx="100" cy="49" rx="44" ry="8" fill="#1a1a20"/><text x="100" y="196" text-anchor="middle" font-family="Bebas Neue,Impact" font-size="90" fill="#25252d">?</text></svg>`;
+  const c = f.c, d = f.c2 || shade(c, 0.4), base = f.base || shade(c, -0.8), fin = f.fin || 'gloss', rar = f.r || 'common';
+  const anim = !!o.anim && S.set.parts > 0 && !reducedMotion();
+  const rr = rng(hash(f.id || f.name || 'x'));
+  const metal = fin === 'metal' || fin === 'holo';
+  const lines = o.noText ? [] : wrapName(f.name.toUpperCase());
+  const fs = clamp(104 / (Math.max(1, ...lines.map(l => l.length)) * 0.46), 14, 31), y0 = 196 - (lines.length - 1) * fs * 0.52;
+  const words = CFG.brand.name.split(' '), w1 = words[0], w2 = words.slice(1).join(' ');
+  const name = lines.map((l, i) => `<text x="100" y="${f1(y0 + i * fs * 1.04)}" text-anchor="middle" font-family="Bebas Neue,Impact,sans-serif" font-size="${f1(fs)}" letter-spacing="1" fill="#fff" stroke="#000" stroke-opacity=".85" stroke-width="3.6" paint-order="stroke">${esc(l)}</text>`).join('');
+  const wordmark = o.noText ? '' : `<rect x="52" y="93" width="96" height="21" rx="4" fill="#000" fill-opacity=".62" stroke="${c}" stroke-width="1"/><text x="100" y="109" text-anchor="middle" textLength="82" lengthAdjust="spacingAndGlyphs" font-family="Bebas Neue,Impact,sans-serif" font-size="17"><tspan fill="#fff">${esc(w1)}</tspan>${w2 ? ` <tspan fill="${c}">${esc(w2)}</tspan>` : ''}</text>`;
+  const L = fin === 'holo' ? [0.2, 0.04, 0.16] : [0.34, 0.08, 0.28];     // how much brighter the metal highlights get
+  const stops = metal
+    ? [[0, shade(base, -0.45)], [0.22, shade(base, L[0])], [0.45, shade(base, L[1])], [0.72, shade(base, L[2])], [1, shade(base, -0.5)]]
+    : [[0, shade(base, -0.5)], [0.3, base], [0.62, shade(base, 0.14)], [1, shade(base, -0.55)]];
+  const hl = fin === 'gloss' ? 0.42 : fin === 'matte' ? 0.1 : 0.3;
+  const patArt = (PAT[f.pat] || PAT.bolts)(c, d, rr, uid);
+  const rainbow = ['#ff4d4d', '#ffd24d', '#7dff6a', '#4dd8ff', '#a64dff', '#ff4dd8'].map((k, i) => `<stop offset="${i / 6}" stop-color="${k}"/>`).join('') + '<stop offset="1" stop-color="#ff4d4d"/>';
+
+  /* rarity layers (drawn above the print, below the cylinder shading) */
+  let rarity = '';
+  if (rar === 'rare') rarity = `<polygon points="40,206 160,104 160,152 40,254" fill="url(#${uid}h)"/><rect x="40" y="50" width="120" height="255" fill="url(#${uid}p)"/>`;
+  if (rar === 'epic') rarity = `<polygon class="${anim ? 'shim' : ''}" points="0,56 34,56 6,310 -28,310" fill="url(#${uid}e)" ${anim ? '' : 'style="transform:translateX(88px)"'}/><polygon points="40,206 160,104 160,140 40,242" fill="url(#${uid}h)" opacity=".6"/>`;
+  if (rar === 'legendary') rarity = `<rect class="${anim ? 'holo' : ''}" x="-100" y="56" width="480" height="250" fill="url(#${uid}r)" opacity=".24" ${anim ? '' : 'style="transform:translateX(-34px)"'}/><rect x="40" y="50" width="120" height="255" fill="url(#${uid}p)"/>`;
+  const holoFin = fin === 'holo' && rar !== 'legendary' ? `<rect x="40" y="56" width="120" height="250" fill="url(#${uid}r)" opacity=".14"/>` : '';
+  const glow = rar === 'limited'
+    ? `<path d="${BODY}" fill="none" stroke="${c}" stroke-width="11" stroke-linejoin="round" opacity=".16" class="${anim ? 'gl' : ''}"/><path d="${BODY}" fill="none" stroke="${c}" stroke-width="6" stroke-linejoin="round" opacity=".3" class="${anim ? 'gl' : ''}"/><path d="${BODY}" fill="none" stroke="${c}" stroke-width="2.6" stroke-linejoin="round"/>`
+    : `<path d="${BODY}" fill="none" stroke="${c}" stroke-width="1.5" stroke-opacity=".4"/>`;
+
+  return `<svg viewBox="0 0 200 330"${cls} xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="${uid}b" x1="0" x2="1">${stops.map(s => `<stop offset="${s[0]}" stop-color="${s[1]}"/>`).join('')}</linearGradient>
+<linearGradient id="${uid}s" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".72"/><stop offset=".1" stop-color="#000" stop-opacity=".28"/><stop offset=".2" stop-color="#000" stop-opacity="0"/><stop offset=".3" stop-color="#fff" stop-opacity="${hl}"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/><stop offset=".66" stop-color="#000" stop-opacity="0"/><stop offset=".9" stop-color="#000" stop-opacity=".38"/><stop offset="1" stop-color="#000" stop-opacity=".78"/></linearGradient>
+<linearGradient id="${uid}m" x1="0" x2="1"><stop offset="0" stop-color="#5b5e66"/><stop offset=".3" stop-color="#f4f6fa"/><stop offset=".55" stop-color="#a9adb6"/><stop offset=".8" stop-color="#e9ecf1"/><stop offset="1" stop-color="#3f4249"/></linearGradient>
+<linearGradient id="${uid}a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="${shade(c, -0.5)}"/></linearGradient>
+<linearGradient id="${uid}t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset=".5" stop-color="#000" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>
+<linearGradient id="${uid}f" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".2"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="${uid}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset=".6" stop-color="#fff" stop-opacity=".25"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="${uid}h" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".3"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="${uid}e" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".62"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="${uid}r" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="120" y2="40" spreadMethod="repeat">${rainbow}</linearGradient>
+<pattern id="${uid}p" width="4" height="6" patternUnits="userSpaceOnUse"><rect width="1" height="6" fill="#fff" opacity=".045"/></pattern>
+<clipPath id="${uid}c"><path d="${BODY}"/></clipPath>
+<clipPath id="${uid}k"><rect x="40" y="90" width="120" height="192"/></clipPath>
+</defs>
+<g clip-path="url(#${uid}c)">
+<rect x="40" y="50" width="120" height="256" fill="url(#${uid}b)"/>
+${metal ? `<rect x="40" y="50" width="120" height="256" fill="url(#${uid}p)"/>` : ''}
+<g clip-path="url(#${uid}k)">${patArt}</g>
+<rect x="40" y="50" width="120" height="38" fill="url(#${uid}m)"/>
+<rect x="40" y="86" width="120" height="5" fill="url(#${uid}a)"/><rect x="40" y="272" width="120" height="10" fill="url(#${uid}a)"/>
+<rect x="40" y="144" width="120" height="104" fill="url(#${uid}t)"/>
+${wordmark}${name}
+${holoFin}${rarity}
+<rect x="40" y="50" width="120" height="256" fill="url(#${uid}s)"/>
+<g class="rf"><rect x="52" y="60" width="24" height="236" fill="url(#${uid}f)"/>${fin === 'gloss' ? `<rect x="60" y="94" width="5" height="172" rx="2.5" fill="url(#${uid}g)"/><path d="M52 92 Q58 72 74 66" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2.2" stroke-linecap="round"/>` : ''}</g>
+<path d="M58 60 Q100 69 142 60 M54 66 Q100 76 146 66 M50 72 Q100 83 150 72" fill="none" stroke="#000" stroke-opacity=".22" stroke-width="1"/>
+<path d="M58 61 Q100 70 142 61 M54 67 Q100 77 146 67" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width=".8"/>
+<path d="M44 286 Q100 296 156 286" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="1.4"/>
+</g>
+${glow}
+<ellipse cx="100" cy="302" rx="45" ry="6" fill="url(#${uid}m)"/><ellipse cx="100" cy="300" rx="41" ry="4.6" fill="none" stroke="#000" stroke-opacity=".3"/>
+<ellipse cx="100" cy="51" rx="46" ry="9" fill="url(#${uid}m)"/>
+<ellipse cx="100" cy="50" rx="42" ry="7.4" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="1.2"/>
+<ellipse cx="100" cy="49.5" rx="38" ry="6.4" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width=".9"/>
+<ellipse cx="100" cy="49" rx="34" ry="5.6" fill="#8d9199"/><ellipse cx="100" cy="48.6" rx="31" ry="4.8" fill="url(#${uid}m)"/>
+<path d="M104 45.5 Q119 44.5 121 49 Q119 53.5 104 52.6 Z" fill="#16161b" stroke="#6b6e75" stroke-width=".8"/>
+<rect x="82" y="45.2" width="30" height="7" rx="3.5" fill="url(#${uid}m)" stroke="#5c5f66" stroke-width=".8"/>
+<ellipse cx="102" cy="48.7" rx="7" ry="2.1" fill="#16161b"/><circle cx="90" cy="48.7" r="2.2" fill="#c9ccd3" stroke="#555" stroke-width=".6"/>
+</svg>`;
+}
+
+/* =====================================================================
    6. AUDIO  -  everything is synthesised with the Web Audio API (no files)
    The AudioContext is only created on the first user interaction.
    ===================================================================== */
@@ -1040,52 +1184,6 @@ const FX = {
   }
 };
 
-/* =====================================================================
-   8. CAN ART  -  original generic can: dark body, flavour-colour bands and
-   diagonal "claw-scratch" slashes. No real brand logo or can design is copied.
-   ===================================================================== */
-let _cid = 0;
-function wrapName(n) {
-  if (n.length <= 9) return [n];
-  const lines = []; let cur = '';
-  n.split(' ').forEach(w => { if (cur && (cur + ' ' + w).length > 10) { lines.push(cur); cur = w; } else cur = (cur ? cur + ' ' : '') + w; });
-  if (cur) lines.push(cur); return lines.slice(0, 4);
-}
-function canSVG(f, o = {}) {
-  const id = 'k' + (_cid++), c = f.c, c2 = shade(c, -0.55), cls = o.cls ? `class="${o.cls}"` : '';
-  const body = 'M50 38 L150 38 L150 46 Q158 54 158 72 L158 282 Q158 298 142 302 L58 302 Q42 298 42 282 L42 72 Q42 54 50 46 Z';
-  if (o.sil) {
-    return `<svg viewBox="0 0 200 330" ${cls}><path d="${body}" fill="#0c0c10" stroke="#2a2a33" stroke-width="3"/><text x="100" y="196" text-anchor="middle" font-family="Bebas Neue,Impact" font-size="90" fill="#25252d">?</text></svg>`;
-  }
-  const lines = o.noText ? [] : wrapName(f.name.toUpperCase());
-  const longest = Math.max(1, ...lines.map(l => l.length));
-  const fs = clamp(100 / (longest * 0.46), 14, 34);
-  const y0 = 190 - (lines.length - 1) * fs * 0.52;
-  const text = lines.map((l, i) => `<text x="100" y="${(y0 + i * fs * 1.04).toFixed(1)}" text-anchor="middle" font-family="Bebas Neue,Impact,sans-serif" font-size="${fs.toFixed(1)}" letter-spacing="1" fill="#fff" stroke="#000" stroke-width="3.5" paint-order="stroke">${l}</text>`).join('');
-  return `<svg viewBox="0 0 200 330" ${cls} xmlns="http://www.w3.org/2000/svg">
-<defs>
-<linearGradient id="${id}b" x1="0" x2="1"><stop offset="0" stop-color="#040405"/><stop offset=".3" stop-color="#1c1c21"/><stop offset=".55" stop-color="#0e0e11"/><stop offset="1" stop-color="#030304"/></linearGradient>
-<linearGradient id="${id}a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="${c2}"/></linearGradient>
-<linearGradient id="${id}m" x1="0" x2="1"><stop offset="0" stop-color="#7d8088"/><stop offset=".4" stop-color="#e8eaee"/><stop offset="1" stop-color="#5e6168"/></linearGradient>
-<clipPath id="${id}c"><path d="${body}"/></clipPath>
-</defs>
-<path d="${body}" fill="url(#${id}b)" stroke="${c}" stroke-width="2" stroke-opacity=".7"/>
-<g clip-path="url(#${id}c)">
-<rect x="40" y="66" width="120" height="13" fill="url(#${id}a)"/>
-<rect x="40" y="276" width="120" height="14" fill="url(#${id}a)"/>
-<path d="M150 82 L96 276 L82 276 L136 82Z" fill="url(#${id}a)" opacity=".9"/>
-<path d="M170 96 L112 276 L106 276 L164 96Z" fill="${c}" opacity=".75"/>
-<path d="M118 82 L64 276 L56 276 L110 82Z" fill="${c}" opacity=".55"/>
-<path d="M90 96 L42 252 L42 224 L74 96Z" fill="${c}" opacity=".35"/>
-<rect x="50" y="48" width="10" height="240" fill="#fff" opacity=".09"/>
-${text}
-</g>
-<ellipse cx="100" cy="40" rx="51" ry="9" fill="url(#${id}m)"/>
-<ellipse cx="100" cy="39" rx="40" ry="5.5" fill="#26262b"/>
-<rect x="87" y="34" width="26" height="8" rx="4" fill="#d6d9df" stroke="#6a6d74"/>
-<ellipse cx="100" cy="301" rx="58" ry="7" fill="url(#${id}m)" opacity=".9"/>
-</svg>`;
-}
 const rarTag = r => `<span class="tag c-${r}">${CFG.rarities[r].name.toUpperCase()}</span>`;
 
 /* =====================================================================
@@ -1125,7 +1223,7 @@ function applyTheme() {
   root.setProperty('--acc', col); root.setProperty('--acc-rgb', `${r},${g},${b}`);
   FX.col = [r, g, b];
   const tm = document.querySelector('meta[name=theme-color]'); if (tm) tm.content = hallo ? '#0b0412' : '#050505';
-  $('#can').innerHTML = canSVG(f);
+  $('#can').innerHTML = canSVG(f, { anim: true });
   renderEqChips();
 }
 function renderEqChips() {
@@ -1154,7 +1252,10 @@ function renderActive(force) {
 function handleTap(e) {
   e.preventDefault(); AU.init();
   const res = doTap(), [x, y] = FX.rel(e);
-  $('#can').animate([{ transform: 'scale(1)' }, { transform: res.crit ? 'scale(1.1,.88)' : 'scale(1.05,.93)', offset: 0.3 }, { transform: 'scale(1)' }], { duration: res.crit ? 200 : 130, easing: 'ease-out' });
+  const can = $('#can');
+  can.animate([{ transform: 'scale(1)' }, { transform: res.crit ? 'scale(1.1,.88)' : 'scale(1.05,.93)', offset: 0.3 }, { transform: 'scale(1)' }], { duration: res.crit ? 200 : 130, easing: 'ease-out' });
+  const rf = can.querySelector('.rf');                              // the soft reflection slides across the can on every tap
+  if (rf) rf.animate([{ transform: `translateX(${res.crit ? 62 : 34}px)` }, { transform: 'translateX(0)' }], { duration: res.crit ? 650 : 480, easing: 'ease-out' });
   FX.text(x, y - 16, '+' + fmt(res.v), res.crit);
   const r = $('#can').getBoundingClientRect(), a = $('#app').getBoundingClientRect();
   for (let i = 0; i < FX.per[FX.lvl()]; i++) FX.bubble(r.left - a.left + r.width / 2, r.top - a.top + r.height * 0.15, r.width * 0.2);
@@ -1191,6 +1292,7 @@ function updHud() {
   setText($('#cps'), fmt(cps()));
   setText($('#cpt'), fmt(tapBase() * tapMods()));
 }
+const GOLDEN_CAN = { id: 'goldencan', name: 'Golden', r: 'epic', c: '#ffd400', c2: '#fff4a0', base: '#4a3600', fin: 'metal', pat: 'stars' };
 function uiGold(dt) {
   const g = R.gold;
   if (!g && UI.goldEl) { UI.goldEl.remove(); UI.goldEl = null; }
@@ -1198,7 +1300,7 @@ function uiGold(dt) {
   const W = FX.w, Hh = FX.h;
   if (!UI.goldEl) {
     const el = document.createElement('div'); el.className = 'gcan' + (g.type === 'ltd' ? ' ltd' : '');
-    el.innerHTML = canSVG(g.type === 'ltd' ? FL[S.ev.limId] : { c: '#ffd400', name: '' }, { noText: true });
+    el.innerHTML = canSVG(g.type === 'ltd' ? FL[S.ev.limId] : GOLDEN_CAN, { noText: true });
     el.addEventListener('pointerdown', e => {
       e.preventDefault(); e.stopPropagation(); AU.init();
       const [x, y] = FX.rel(e); FX.burst(x, y, 26, '#ffd400'); catchGold();
@@ -1265,7 +1367,7 @@ function renderFri() {
   const sm = slotsMax(), hints = [null, 'Unlock: 10M lifetime ' + CFG.brand.currency.toLowerCase(), 'Unlock: ' + CFG.brand.recycle + ' once', CFG.brand.plant + ' (Luck)', CFG.brand.plant + ' (Luck)'];
   let slots = '';
   for (let i = 0; i < Math.min(5, sm + 1); i++) {
-    if (i < sm) { const id = S.eq[i]; slots += id ? `<button class="slot" data-act="flav" data-id="${id}" style="border-style:solid;border-color:${FL[id].c}">${canSVG(FL[id], { noText: true })}</button>` : `<div class="slot">empty<br>slot</div>`; }
+    if (i < sm) { const id = S.eq[i]; slots += id ? `<button class="slot" data-act="flav" data-id="${id}" style="border-style:solid;border-color:${FL[id].c}">${canSVG(FL[id])}</button>` : `<div class="slot">empty<br>slot</div>`; }
     else slots += `<div class="slot lock">🔒<br>${hints[i] || ''}</div>`;
   }
   const crates = ['common', 'rare', 'epic'].map(k => {
@@ -1276,7 +1378,7 @@ ${buy ? `<button class="btn alt" style="min-height:44px;width:90%;margin-top:4px
   }).join('');
   const cells = list.slice().sort((a, b) => RAR_ORDER.indexOf(a.r) - RAR_ORDER.indexOf(b.r)).map(f => {
     const o = owned(f.id), lv = flavLv(f.id);
-    return `<button class="cell r-${f.r} ${o ? '' : 'u'}" data-act="flav" data-id="${f.id}">${S.eq.includes(f.id) ? '<span class="eq">★</span>' : ''}${o ? `<span class="lv">Lv${lv}</span>` : ''}${canSVG(f, o ? { noText: true } : { sil: true })}<div class="cn">${o ? esc(f.name) : '???'}</div></button>`;
+    return `<button class="cell r-${f.r} ${o ? '' : 'u'}" data-act="flav" data-id="${f.id}">${S.eq.includes(f.id) ? '<span class="eq">★</span>' : ''}${o ? `<span class="lv">Lv${lv}</span>` : ''}${canSVG(f, o ? {} : { sil: true })}<div class="cn">${o ? esc(f.name) : '???'}</div></button>`;
   }).join('');
   $('#fri-body').innerHTML = `<div class="sec-h">${CFG.brand.fridge.toUpperCase()}<small>${have}/${list.length} · ${pct}% complete</small></div>
 <div class="bar thin prog"><i style="width:${pct}%"></i></div>
@@ -1290,24 +1392,31 @@ function flavModal(id) {
     f.season ? `Seasonal: only during the ${CFG.brand.hallo}. Found in crates & Limited Drops.` :
     f.r === 'limited' ? `Limited: found in ${CFG.brand.crate}s, rare drops and Limited Drop events.` : `Found in ${CFG.brand.crate}s and as rare tap drops.`;
   const next = o && lv < 10 ? `<p>Next level: <b class="hl">${perkText(f.perk[0], perkVal(f, lv + 1))}</b></p>` : '';
-  modal(`${canSVG(f, o ? { cls: 'big-can' } : { sil: true, cls: 'big-can' })}
+  modal(`${canSVG(f, o ? { cls: 'big-can', anim: true } : { sil: true, cls: 'big-can' })}
 <h2 style="color:${o ? f.c : '#666'}">${o ? esc(f.name) : '???'}</h2><div>${rarTag(f.r)}</div>
 ${o ? `<p>Level <b class="hl">${lv}/10</b> · duplicates level it up</p><div class="bar thin prog" style="margin:6px 0"><i style="width:${lv * 10}%"></i></div>
 <p style="color:#fff;font-size:15px"><b>${perkText(f.perk[0], perkVal(f, lv))}</b></p>${next}` : `<p>${hint}</p><p>Perk: <b class="hl">${perkText(f.perk[0], perkVal(f, 1))}</b></p>`}
 <div class="cb">${o ? (S.eq.includes(id) && S.eq.length === 1 ? `<button class="btn alt" disabled>EQUIPPED</button>` : `<button class="btn" data-act="equip" data-id="${id}">${S.eq.includes(id) ? 'UNEQUIP' : 'EQUIP'}</button>`) : ''}<button class="btn alt" data-act="close">CLOSE</button></div>`);
 }
+/* Reveal card shared by crates and milestone/drop unlocks. New flavours spin in 3D. */
+function revealModal(res, kind) {
+  const f = FL[res.id], more = kind && S.crates[kind] > 0;
+  modal(`<div class="${res.isNew ? 'spin3d' : 'reveal'}">${canSVG(f, { cls: 'big-can', anim: true })}</div><h2 style="color:${f.c}">${esc(f.name)}</h2><div>${rarTag(f.r)}</div>
+<p style="color:#fff;font-size:15px">${res.isNew ? '🆕 <b>NEW FLAVOUR UNLOCKED!</b>' : res.refund ? `Max level! Refund <b class="hl">+${fmt(res.refund)}</b>` : `Duplicate! Now <b class="hl">Level ${res.lv}</b>`}</p>
+<p><b>${perkText(f.perk[0], perkVal(f, res.lv))}</b></p>
+<div class="cb">${more ? `<button class="btn" data-act="crate-open" data-k="${kind}">OPEN ANOTHER (${S.crates[kind]})</button>` : ''}<button class="btn alt" data-act="close">${res.isNew ? 'AWESOME' : 'OK'}</button></div>`);
+}
 function crateModal(kind) {
   if (!(S.crates[kind] > 0)) return;
   AU.init(); modal(`<h2>${CFG.crates[kind].name.toUpperCase()}</h2><div class="crate-anim">${CFG.crates[kind].icon}</div><p>Cracking it open...</p>`, { sticky: true });
   AU.fizz();
-  setTimeout(() => {
-    const res = openCrate(kind); if (!res) return closeModal();
-    const f = FL[res.id], more = S.crates[kind] > 0;
-    modal(`<div class="reveal">${canSVG(f, { cls: 'big-can' })}</div><h2 style="color:${f.c}">${esc(f.name)}</h2><div>${rarTag(f.r)}</div>
-<p style="color:#fff;font-size:15px">${res.isNew ? '🆕 <b>NEW FLAVOUR UNLOCKED!</b>' : res.refund ? `Max level! Refund <b class="hl">+${fmt(res.refund)}</b>` : `Duplicate! Now <b class="hl">Level ${res.lv}</b>`}</p>
-<p><b>${perkText(f.perk[0], perkVal(f, res.lv))}</b></p>
-<div class="cb">${more ? `<button class="btn" data-act="crate-open" data-k="${kind}">OPEN ANOTHER (${S.crates[kind]})</button>` : ''}<button class="btn alt" data-act="close">${res.isNew ? 'AWESOME' : 'OK'}</button></div>`);
-  }, 1100);
+  setTimeout(() => { const res = openCrate(kind); if (!res) return closeModal(); revealModal(res, kind); }, 1100);
+}
+/* milestone / tap-drop unlocks queue a reveal that opens as soon as no other popup is showing */
+UI.reveals = [];
+H.unlocked = id => { UI.reveals.push(id); };
+function flushReveals() {
+  if (UI.reveals.length && $('#modal').hidden && !R.mgActive) revealModal({ id: UI.reveals.shift(), isNew: true, lv: 1 });
 }
 
 /* ---------- "More" hub: achievements, quests, mini-games, recycle, stats, settings ---------- */
@@ -1512,7 +1621,7 @@ function mgMatch() {
   let first = -1, lock = false, left = 30, over = false, pairs = 0;
   const draw = () => {
     const gr = $('#mg-grid'); if (!gr) return;
-    gr.innerHTML = cards.map((c, i) => `<button class="mcard ${c.up || c.ok ? '' : 'back'} ${c.ok ? 'ok' : ''}" data-act="mg-card" data-i="${i}">${c.up || c.ok ? canSVG(c.f, { noText: true }) : ''}</button>`).join('');
+    gr.innerHTML = cards.map((c, i) => `<button class="mcard ${c.up || c.ok ? '' : 'back'} ${c.ok ? 'ok' : ''}" data-act="mg-card" data-i="${i}">${c.up || c.ok ? canSVG(c.f) : ''}</button>`).join('');
   };
   const end = () => {
     if (over) return; over = true;
@@ -1592,7 +1701,7 @@ function showOffline(gap) {
 <div class="big">+${fmt(earned)}</div><p>${CFG.brand.currency}</p><div class="cb"><button class="btn" data-act="close">COLLECT</button></div>`, { onClose: maybeDaily });
   AU.chime();
 }
-function maybeDaily() { if (!dailyInfo().claimed && $('#modal').hidden) setTimeout(() => { if ($('#modal').hidden) dailyModal(); }, 250); }
+function maybeDaily() { if (!dailyInfo().claimed && $('#modal').hidden) setTimeout(() => { if ($('#modal').hidden && !dailyInfo().claimed) dailyModal(); }, 250); }
 
 Object.assign(ACT, {
   tab: el => showTab(el.dataset.v),
@@ -1691,7 +1800,7 @@ function frame(ts) {
     FX.bubble(r.left - a.left + r.width / 2, r.top - a.top + r.height * 0.9, r.width * 0.3);
   }
   if (_a2 >= 0.25) {
-    _a2 = 0; updBanners(); updDots();
+    _a2 = 0; updBanners(); updDots(); flushReveals();
     const free = $('#modal').hidden;
     if (R.tab === 'bld') updBld();
     else if (R.tab === 'upg') renderUpg();
